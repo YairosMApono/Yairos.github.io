@@ -1,7 +1,3926 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FamilyHub - Familienplaner</title>
+    <style>
+        :root {
+            --primary-color: #4285F4;
+            --text-color: #FFFFFF;
+            --bg-dark: #1E1E1E;
+            --bg-card: #2D2D2D;
+            --bg-meal-slot: #3a3a3a; /* Slightly lighter for meal slots */
+            --border-color: #444444;
+            --orange-color: #FF9800;
+            --pink-color: #FF4081;
+            --green-color: #4CAF50;
+            --purple-color: #9C27B0;
+            --blue-color: #42A5F5;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            padding: 15px 0;
+            text-align: center;
+        }
+
+        .nav {
+            display: flex;
+            background-color: var(--bg-dark);
+            border-bottom: 1px solid #333;
+            padding: 0 20px;
+            flex-wrap: wrap; /* Allow nav items to wrap on smaller screens */
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            border-bottom: 3px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .content-section {
+            display: none; /* Sections are hidden by default */
+        }
+
+        .content-section.active {
+            display: block; /* Active section is shown */
+        }
+
+        .welcome {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .welcome h1 {
+            color: var(--primary-color);
+            font-size: 2.2em;
+            margin-bottom: 5px;
+        }
+
+        .welcome p {
+            color: #AAA;
+            margin-top: 0;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .appointment-item, .task-item, .meal-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .dot-purple { background-color: var(--purple-color); }
+        .dot-orange { background-color: var(--orange-color); }
+        .dot-pink { background-color: var(--pink-color); }
+        .dot-blue { background-color: var(--blue-color); }
+        .dot-green { background-color: var(--green-color); }
+
+        .button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            margin: 15px auto 5px;
+            width: 80%;
+            max-width: 200px;
+            text-decoration: none;
+        }
+
+        .budget-item {
+            margin-bottom: 10px;
+        }
+
+        .budget-progress {
+            background-color: #444;
+            height: 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .budget-bar {
+            height: 100%;
+            border-radius: 4px;
+            background-color: var(--primary-color);
+        }
+
+        .recipe-card {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .star-rating {
+            color: gold;
+            margin-right: 10px;
+        }
+
+        .vacation-info {
+            margin-bottom: 15px;
+        }
+
+        .progress-text {
+            font-size: 0.85em;
+            color: #BBB;
+            margin-top: 3px;
+        }
+
+        /* Calendar styles */
+        .calendar {
+            width: 100%;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-nav {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .month-title {
+            font-size: 1.5em;
+            color: var(--primary-color);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .weekday {
+            text-align: center;
+            padding: 8px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .calendar-day {
+            background-color: var(--bg-card);
+            border-radius: 6px;
+            min-height: 80px;
+            padding: 5px;
+            position: relative;
+        }
+
+        .day-number {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-weight: bold;
+        }
+
+        .calendar-event {
+            margin-top: 25px;
+            padding: 3px 5px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .event-emma { background-color: rgba(255, 64, 129, 0.7); }
+        .event-tim { background-color: rgba(255, 152, 0, 0.7); }
+        .event-alle { background-color: rgba(156, 39, 176, 0.7); }
+        .event-mama { background-color: rgba(66, 165, 245, 0.7); }
+        .event-papa { background-color: rgba(76, 175, 80, 0.7); }
+
+        .today {
+            border: 2px solid var(--primary-color);
+        }
+
+        /* New Meal Plan UI Styles */
+        .meal-plan-week-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive columns */
+            gap: 15px;
+            padding: 10px;
+            background-color: var(--bg-dark); /* Match body background */
+            border-radius: 8px;
+        }
+
+        .meal-plan-day {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .meal-plan-day-header {
+            color: var(--primary-color);
+            font-size: 1.3em;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .meal-slot {
+            background-color: var(--bg-meal-slot);
+            border: 1px dashed var(--border-color); /* Dashed border to indicate input area */
+            border-radius: 6px;
+            padding: 12px;
+            min-height: 60px; /* Ensure slots have some height */
+            display: flex;
+            flex-direction: column; /* Allow label and content stacking */
+            justify-content: flex-start; /* Align content to the top */
+            cursor: pointer; /* Indicate interactivity for later */
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+        .meal-slot:hover {
+            background-color: #4b4b4b; /* Slightly lighter on hover */
+        }
+
+        .meal-slot-label {
+            font-size: 0.8em;
+            color: #b0b0b0; /* Lighter text for label */
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .meal-slot-content {
+            font-size: 0.95em;
+            color: var(--text-color);
+            /* Placeholder for actual meal text */
+        }
+         .meal-slot-placeholder {
+            font-style: italic;
+            color: #777;
+        }
+
+        .meal-slot.has-meal {
+            border: 1px solid var(--primary-color);
+            background-color: rgba(66, 133, 244, 0.1);
+        }
+
+        .meal-slot-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
+            gap: 5px;
+        }
+
+        .meal-slot:hover .meal-slot-actions {
+            display: flex;
+        }
+
+        .meal-action-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: none;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-meal-btn {
+            background-color: var(--blue-color);
+        }
+
+        .delete-meal-btn {
+            background-color: #f44336;
+        }
+
+        .meal-plan-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .meal-plan-controls button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .meal-plan-controls button:hover {
+            background-color: #3b78e7;
+        }
+
+        /* Recipe selection styles */
+        .recipe-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+
+        .recipe-selection-item {
+            background-color: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .recipe-selection-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .recipe-selection-item.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(66, 133, 244, 0.1);
+        }
+
+        .recipe-selection-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .recipe-selection-meta {
+            font-size: 0.9em;
+            color: #AAA;
+            margin-bottom: 5px;
+        }
+
+        .recipe-selection-description {
+            font-size: 0.8em;
+            color: #BBB;
+        }
+
+        /* Recipe book styles */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-button {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+        }
+
+        .filter-button.active {
+            background-color: var(--primary-color);
+        }
+
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .recipe-item {
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .recipe-actions {
+            position: absolute;
+            top: 40px; /* Verschoben von 10px auf 40px, um unter der Zeitanzeige zu sein */
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .recipe-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .edit-recipe {
+            background-color: var(--blue-color);
+        }
+
+        .delete-recipe {
+            background-color: #f44336;
+        }
+
+        .recipe-tag {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 4px 8px;
+            font-size: 0.8em;
+            margin: 10px;
+        }
+
+        .recipe-time {
+            display: inline-block;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 4px 8px;
+            font-size: 0.8em;
+            margin: 10px;
+            float: right;
+            position: relative; /* Hinzugefügt für besseres Stacking */
+            z-index: 1; /* Höherer z-index als die Buttons, um sicherzustellen, dass sie im Vordergrund bleibt */
+        }
+
+        .recipe-content {
+            background-color: var(--bg-card);
+            padding: 15px;
+        }
+
+        .recipe-title {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .recipe-description {
+            color: #AAA;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .recipe-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #BBB;
+        }
+
+        /* Farbpalette für Rezepte */
+        .color-1 { background-color: #FF9800; }
+        .color-2 { background-color: #FF5722; }
+        .color-3 { background-color: #4CAF50; }
+        .color-4 { background-color: #3F51B5; }
+        .color-5 { background-color: #9C27B0; }
+        .color-6 { background-color: #607D8B; }
+
+        /* Add Recipe Button */
+        .add-recipe-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .add-recipe-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .add-recipe-btn:hover {
+            background-color: #3b78e7;
+        }
+
+        /* Rating stars input */
+        .star-rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 5px;
+            justify-content: flex-end;
+        }
+
+        .star-rating-input input {
+            display: none;
+        }
+
+        .star-rating-input label {
+            font-size: 25px;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .star-rating-input label:hover,
+        .star-rating-input label:hover ~ label,
+        .star-rating-input input:checked ~ label {
+            color: gold;
+        }
+
+        /* Simple task styles */
+        .task-item {
+            transition: background-color 0.2s ease;
+        }
+        
+        .task-item:hover {
+            background-color: rgba(66, 133, 244, 0.1);
+        }
+
+        /* Household Tasks Table Styles */
+        .rotation-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .rotation-table th,
+        .rotation-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .rotation-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .rotation-table td {
+            text-align: center;
+        }
+
+        .rotation-table td:first-child {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .rotation-table input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .task-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .task-controls button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .task-controls button:hover {
+            background-color: #3b78e7;
+        }
+
+        /* Budget tracker styles */
+        .budget-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .budget-card {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .budget-title {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .budget-amount {
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .visualization-container {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+        }
+
+        /* Shopping list styles */
+        .shopping-list {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .shopping-list-header {
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: white;
+        }
+        
+        .shopping-list-content {
+            padding: 15px;
+        }
+        
+        .shopping-list-form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        
+        .shopping-list-inputs {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .shopping-list-form input {
+            padding: 8px 10px;
+            border-radius: 4px;
+            border: none;
+            background-color: #444;
+            color: white;
+        }
+        
+        .shopping-list-form input::placeholder {
+            color: #AAA;
+        }
+        
+        .shopping-list-form input[type="text"] {
+            flex-grow: 1;
+        }
+        
+        .shopping-list-form input[type="text"]:focus,
+        .shopping-list-form input[type="text"]:active {
+            outline: 1px solid var(--primary-color);
+        }
+        
+        .shopping-list-form button {
+            padding: 8px 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        
+        .shopping-list-items {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .shopping-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .shopping-list-item-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .shopping-list-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .shopping-list-item.completed {
+            display: none; /* Ausgeblendete Elemente */
+        }
+        
+        .shopping-list.empty .shopping-list-content {
+            display: none;
+        }
+        
+        .shopping-list.empty .shopping-list-header {
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .shopping-list.empty .shopping-list-header::after {
+            content: " (Leer - Klicken zum Erweitern)";
+            font-size: 0.8em;
+            font-weight: normal;
+            opacity: 0.7;
+        }
+
+        .vacation-header {
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .summer-vacation { background-color: var(--primary-color); }
+        .fall-vacation { background-color: var(--pink-color); }
+
+        .vacation-content {
+            padding: 15px;
+        }
+
+        .vacation-title {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .vacation-description {
+            color: #AAA;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .checklist {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .checklist-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .checklist-progress {
+            color: #AAA;
+        }
+
+        .checklist-item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .checklist-item.completed {
+            text-decoration: line-through;
+            color: #777;
+        }
+
+        .deadline {
+            color: #AAA;
+            font-size: 0.9em;
+        }
+
+        /* Modal für Kontaktformular */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: var(--bg-dark);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .contact-form-field {
+            margin-bottom: 15px;
+        }
+        
+        .contact-form-field label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .contact-form-field input,
+        .contact-form-field select {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 4px;
+        }
+        
+        .contact-form-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        /* Rezeptformular-Felder */
+        .recipe-form-field {
+            margin-bottom: 15px;
+        }
+        
+        .recipe-form-field label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .recipe-form-field input,
+        .recipe-form-field select,
+        .recipe-form-field textarea {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 4px;
+        }
+        
+        .recipe-form-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .recipe-form-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        /* Meal form styles */
+        .meal-form-field {
+            margin-bottom: 15px;
+        }
+        
+        .meal-form-field label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .meal-form-field input,
+        .meal-form-field select,
+        .meal-form-field textarea {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 4px;
+        }
+        
+        .meal-form-field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .meal-form-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .meal-source-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .source-btn {
+            padding: 8px 15px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .source-btn.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
 <body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
+    <div class="header"></div>
+
+    <div class="nav">
+        <a href="#" class="nav-item" style="color: var(--primary-color); font-weight: bold;">FamilyHub</a>
+        <a href="#" class="nav-item active" data-target="dashboard-content">Dashboard</a>
+        <a href="#" class="nav-item" data-target="calendar-view">Kalender</a>
+        <a href="#" class="nav-item" data-target="meal-plan-view">Essensplan</a>
+        <a href="#" class="nav-item" data-target="recipe-book-view">Rezeptbuch</a>
+        <a href="#" class="nav-item" data-target="tasks-view">Haushaltsaufgaben</a>
+        <a href="#" class="nav-item" data-target="shopping-list-view">Einkaufsliste</a>
+        <a href="#" class="nav-item" data-target="contacts-view">Kontakte</a>
+        <a href="#" class="nav-item" data-target="budget-view">Budget</a>
+        <a href="#" class="nav-item" data-target="vacation-view">Urlaubsplaner</a>
+    </div>
+
+    <div class="container">
+        <div id="dashboard-content" class="content-section active">
+            <div class="welcome">
+                <h1>Willkommen in eurem Familienplaner</h1>
+                <p>Organisiert euren Familienalltag einfach und effektiv mit unserem umfassenden Planungstool.</p>
+            </div>
+            <div class="row">
+                <div class="card">
+                    <div class="card-header">Nächste Termine</div>
+                    <div class="appointment-item"><span class="dot dot-purple"></span><div><strong>Heute</strong> Familientag</div></div>
+                    <div class="appointment-item"><span class="dot dot-orange"></span><div><strong>20. Mai</strong> Arzttermin 10:15</div></div>
+                    <div class="appointment-item"><span class="dot dot-pink"></span><div><strong>22. Mai</strong> Schwimmen 16:00</div></div>
+                    <a href="#" class="button" data-target="calendar-view">Zum Kalender</a>
+                </div>
+                <div class="card">
+                    <div class="card-header">Heutige Mahlzeiten</div>
+                    <div class="meal-item"><strong>Früh:</strong><span style="margin-left: 10px;">Müsli mit Obst</span></div>
+                    <div class="meal-item"><strong>Mittag:</strong><span style="margin-left: 10px;">-</span></div>
+                    <div class="meal-item"><strong>Abend:</strong><span style="margin-left: 10px;">Spaghetti Bolognese</span></div>
+                    <a href="#" class="button" data-target="meal-plan-view">Zum Essensplan</a>
+                </div>
+                <div class="card">
+                    <div class="card-header">Haushaltsaufgaben Heute</div>
+                    <div class="task-item"><span class="dot dot-pink"></span><div>Tisch decken</div></div>
+                    <div class="task-item"><span class="dot dot-orange"></span><div>Abwasch</div></div>
+                    <div class="task-item"><span class="dot dot-blue"></span><div>Wäsche waschen</div></div>
+                    <a href="#" class="button" data-target="tasks-view">Zu den Aufgaben</a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="card">
+                    <div class="card-header">Budget-Übersicht</div>
+                    <div class="budget-item"><div>Lebensmittel</div><div class="budget-progress"><div class="budget-bar" style="width: 70%"></div></div><div class="progress-text">70%</div></div>
+                    <div class="budget-item"><div>Freizeit</div><div class="budget-progress"><div class="budget-bar" style="width: 90%"></div></div><div class="progress-text">90%</div></div>
+                    <div class="budget-item"><div>Sparziel: Urlaub</div><div class="budget-progress"><div class="budget-bar" style="width: 42%"></div></div><div class="progress-text">42%</div></div>
+                    <a href="#" class="button" data-target="budget-view">Zum Budget</a>
+                </div>
+                <div class="card">
+                    <div class="card-header">Lieblingsrezepte</div>
+                    <div class="recipe-card"><div class="star-rating">★★★★★</div><div>Selbstgemachte Pizza</div></div>
+                    <div class="recipe-card"><div class="star-rating">★★★★☆</div><div>Nudelauflauf mit Gemüse</div></div>
+                    <div class="recipe-card"><div class="star-rating">★★★★★</div><div>Schnelle Tomatensuppe</div></div>
+                    <a href="#" class="button" data-target="recipe-book-view">Zum Rezeptbuch</a>
+                </div>
+                <div class="card">
+                    <div class="card-header">Nächster Urlaub</div>
+                    <div class="vacation-info"><strong>15. - 29. Juli</strong> Sommerurlaub in Italien</div>
+                    <div>4/10 Vorbereitungen erledigt</div>
+                    <div class="budget-progress" style="margin: 10px 0;"><div class="budget-bar" style="width: 40%"></div></div>
+                    <div>Nächster Schritt: Reiseführer besorgen</div>
+                    <a href="#" class="button" data-target="vacation-view">Zum Urlaubsplaner</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="calendar-view" class="content-section">
+            <div class="family-members" style="margin-bottom: 20px;">
+                <strong>Familienmitglieder:</strong>
+                <span class="dot dot-blue"></span> Mama
+                <span class="dot dot-green"></span> Papa
+                <span class="dot dot-pink"></span> Emma
+                <span class="dot dot-orange"></span> Tim
+                <span class="dot dot-purple"></span> Alle
+            </div>
+            <div class="calendar">
+                <div class="calendar-header">
+                    <button class="calendar-nav">← Vorheriger Monat</button>
+                    <div class="month-title">Mai 2025</div>
+                    <button class="calendar-nav">Nächster Monat →</button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="weekday">Mo</div><div class="weekday">Di</div><div class="weekday">Mi</div><div class="weekday">Do</div><div class="weekday">Fr</div><div class="weekday">Sa</div><div class="weekday">So</div>
+                    <div class="calendar-day"><div class="day-number">28</div></div>
+                    <div class="calendar-day"><div class="day-number">29</div></div>
+                    <div class="calendar-day"><div class="day-number">30</div></div>
+                    <div class="calendar-day"><div class="day-number">1</div><div class="calendar-event event-emma">Schule 8:00</div></div>
+                    <div class="calendar-day"><div class="day-number">2</div></div>
+                    <div class="calendar-day"><div class="day-number">3</div></div>
+                    <div class="calendar-day"><div class="day-number">4</div></div>
+                    <div class="calendar-day"><div class="day-number">5</div></div>
+                    <div class="calendar-day"><div class="day-number">6</div></div>
+                    <div class="calendar-day"><div class="day-number">7</div></div>
+                    <div class="calendar-day"><div class="day-number">8</div></div>
+                    <div class="calendar-day"><div class="day-number">9</div></div>
+                    <div class="calendar-day"><div class="day-number">10</div></div>
+                    <div class="calendar-day"><div class="day-number">11</div></div>
+                    <div class="calendar-day"><div class="day-number">12</div></div>
+                    <div class="calendar-day"><div class="day-number">13</div></div>
+                    <div class="calendar-day"><div class="day-number">14</div></div>
+                    <div class="calendar-day"><div class="day-number">15</div></div>
+                    <div class="calendar-day"><div class="day-number">16</div></div>
+                    <div class="calendar-day today"><div class="day-number">17</div> <div class="calendar-event event-alle">Familientag</div></div>
+                    <div class="calendar-day"><div class="day-number">18</div></div>
+                    <div class="calendar-day"><div class="day-number">19</div></div>
+                    <div class="calendar-day"><div class="day-number">20</div> <div class="calendar-event event-papa">Arzttermin 10:15</div></div>
+                    <div class="calendar-day"><div class="day-number">21</div></div>
+                    <div class="calendar-day"><div class="day-number">22</div> <div class="calendar-event event-emma">Schwimmen 16:00</div></div>
+                    <div class="calendar-day"><div class="day-number">23</div></div>
+                    <div class="calendar-day"><div class="day-number">24</div></div>
+                    <div class="calendar-day"><div class="day-number">25</div></div>
+                    <div class="calendar-day"><div class="day-number">26</div></div>
+                    <div class="calendar-day"><div class="day-number">27</div></div>
+                    <div class="calendar-day"><div class="day-number">28</div></div>
+                    <div class="calendar-day"><div class="day-number">29</div></div>
+                    <div class="calendar-day"><div class="day-number">30</div></div>
+                    <div class="calendar-day"><div class="day-number">31</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="meal-plan-view" class="content-section">
+            <div class="welcome">
+                <h1>Essensplan</h1>
+                <p>Plane deine Mahlzeiten für die ganze Woche</p>
+            </div>
+            
+            <div class="meal-plan-controls">
+                <button id="clear-week-btn">Woche leeren</button>
+                <button id="copy-from-recipe-btn">Aus Rezeptbuch hinzufügen</button>
+            </div>
+            
+            <div class="meal-plan-week-view" id="meal-plan-week">
+                <!-- Days will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <div id="recipe-book-view" class="content-section">
+            <div class="add-recipe-btn-container">
+                <button class="add-recipe-btn" id="add-recipe-button">
+                    <span>+</span> Neues Rezept hinzufügen
+                </button>
+            </div>
+            
+            <div class="filter-bar">
+                <button class="filter-button active" data-category="Alle">Alle</button>
+                <button class="filter-button" data-category="Hauptgericht">Hauptgerichte</button>
+                <button class="filter-button" data-category="Dessert">Desserts</button>
+                <button class="filter-button" data-category="Snack">Snacks</button>
+                <button class="filter-button" data-category="Vegetarisch">Vegetarisch</button>
+                <button class="filter-button" data-category="Schnell">Schnell & Einfach</button>
+            </div>
+            
+            <div class="recipe-grid" id="recipe-grid">
+                <!-- Rezepte werden dynamisch hier eingefügt -->
+            </div>
+        </div>
+
+        <div id="tasks-view" class="content-section">
+            <div class="welcome">
+                <h1>Haushaltsaufgaben</h1>
+                <p>Organisiere die Aufgaben für die ganze Familie</p>
+            </div>
+            
+            <div class="task-controls">
+                <button id="add-task-btn">+ Neue Aufgabe hinzufügen</button>
+                <button id="rotate-tasks-btn">Aufgaben rotieren</button>
+                <button id="reset-week-btn">Woche zurücksetzen</button>
+            </div>
+            
+            <div id="tasks-table-container">
+                <!-- Tabelle wird durch JavaScript generiert -->
+            </div>
+            
+            <div id="tasks-summary">
+                <!-- Zusammenfassung wird durch JavaScript generiert -->
+            </div>
+        </div>
+        
+        <div id="shopping-list-view" class="content-section">
+            <div class="welcome">
+                <h1>Einkaufslisten</h1>
+                <p>Verwalte deine Einkaufslisten für verschiedene Geschäfte</p>
+            </div>
+            
+            <div id="shopping-lists-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                <!-- Shopping lists will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <div id="contacts-view" class="content-section">
+            <div class="welcome">
+                <h1>Kontakte</h1>
+                <p>Wichtige Kontakte für die ganze Familie</p>
+            </div>
+            
+            <!-- Kontakte-Filter -->
+            <div style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="filter-button active" data-category="Alle">Alle</button>
+                <button class="filter-button" data-category="Familie">Familie</button>
+                <button class="filter-button" data-category="Freunde">Freunde</button>
+                <button class="filter-button" data-category="Schule">Schule</button>
+                <button class="filter-button" data-category="Ärzte">Ärzte</button>
+                <button class="filter-button" data-category="Notfälle">Notfälle</button>
+            </div>
+            
+            <!-- Kontakte-Grid - wird durch JavaScript gefüllt -->
+            <div id="contacts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <!-- Kontakte werden dynamisch hier eingefügt -->
+            </div>
+        </div>
+
+        <div id="budget-view" class="content-section">
+            <div class="budget-cards">
+                <div class="budget-card"><div class="budget-title">Lebensmittel</div><div class="budget-amount">350 € / 500 €</div><div class="budget-progress"><div class="budget-bar" style="width: 70%"></div></div></div>
+                <div class="budget-card"><div class="budget-title">Freizeitaktivitäten</div><div class="budget-amount">180 € / 200 €</div><div class="budget-progress"><div class="budget-bar" style="width: 90%; background-color: var(--orange-color);"></div></div></div>
+                <div class="budget-card"><div class="budget-title">Haushalt</div><div class="budget-amount">120 € / 150 €</div><div class="budget-progress"><div class="budget-bar" style="width: 80%"></div></div></div>
+                <div class="budget-card"><div class="budget-title">Sparziel: Urlaub</div><div class="budget-amount">850 € / 2000 €</div><div class="budget-progress"><div class="budget-bar" style="width: 42%"></div></div></div>
+            </div>
+            <div class="visualization-container">Ausgabenübersicht (Visualisierung - Platzhalter)</div>
+        </div>
+
+        <div id="vacation-view" class="content-section">
+            <div class="vacation-cards">
+                <div class="vacation-card"><div class="vacation-header summer-vacation">Sommerurlaub</div><div class="vacation-content"><div class="vacation-title">Sommerurlaub in Italien</div><div class="vacation-description">Zwei Wochen Strandurlaub an der Adria.</div><div class="budget-progress"><div class="budget-bar" style="width: 40%"></div></div></div></div>
+                <div class="vacation-card"><div class="vacation-header fall-vacation">Herbstferien</div><div class="vacation-content"><div class="vacation-title">Wanderurlaub im Schwarzwald</div><div class="vacation-description">Eine Woche Wandern und Entspannen in der Natur.</div><div class="budget-progress"><div class="budget-bar" style="width: 20%"></div></div></div></div>
+            </div>
+            <div class="checklist">
+                <div class="checklist-header"><div>Reisevorbereitungen: Sommerurlaub</div><div class="checklist-progress">4/10 erledigt</div></div>
+                <div class="checklist-item completed"><div>✓ Unterkunft buchen</div><div class="deadline">Erledigt am 10.03.2025</div></div>
+                <div class="checklist-item completed"><div>✓ Flüge buchen</div><div class="deadline">Erledigt am 11.03.2025</div></div>
+                <div class="checklist-item completed"><div>✓ Reiseversicherung abschließen</div><div class="deadline">Erledigt am 15.03.2025</div></div>
+                <div class="checklist-item completed"><div>✓ Mietwagen reservieren</div><div class="deadline">Erledigt am 20.03.2025</div></div>
+                <div class="checklist-item"><div>□ Reiseführer besorgen</div><div class="deadline">Bis 01.06.2025</div></div>
+                <div class="checklist-item"><div>□ Auslandskrankenversicherung prüfen</div><div class="deadline">Bis 15.06.2025</div></div>
+                <div class="checklist-item"><div>□ Packliste erstellen</div><div class="deadline">Bis 01.07.2025</div></div>
+                <div class="checklist-item"><div>□ Nachbarn informieren (Pflanzen gießen)</div><div class="deadline">Bis 10.07.2025</div></div>
+                <div class="checklist-item"><div>□ Reiseapotheke zusammenstellen</div><div class="deadline">Bis 12.07.2025</div></div>
+                <div class="checklist-item"><div>□ Koffer packen</div><div class="deadline">Bis 14.07.2025</div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verbessertes JavaScript für die Tab-Navigation
+        document.addEventListener('DOMContentLoaded', function () {
+            setupTabs();
+            
+            // Einkaufslisten initialisieren
+            initShoppingLists();
+            
+            // Kontakte initialisieren
+            initContacts();
+            
+            // Rezeptbuch initialisieren
+            initRecipeBook();
+            
+            // Essensplan initialisieren
+            initMealPlan();
+            
+            // Haushaltsaufgaben initialisieren
+            initHouseholdTasks();
+            
+            // Event-Listener für Tab-Wechsel, um Einkaufslisten zu aktualisieren
+            document.querySelectorAll('.nav-item[data-target="shopping-list-view"]').forEach(item => {
+                item.addEventListener('click', function() {
+                    renderShoppingLists();
+                });
+            
+            // Dashboard initial aktualisieren
+            setTimeout(() => {
+                updateDashboardMeals();
+                updateDashboardTasks();
+            }, 500);
+            });
+            
+            // Event-Listener für Tab-Wechsel, um Kontakte zu aktualisieren
+            document.querySelectorAll('.nav-item[data-target="contacts-view"]').forEach(item => {
+                item.addEventListener('click', function() {
+                    renderContacts('Alle');
+                });
+            });
+            
+            // Event-Listener für Tab-Wechsel, um Essensplan zu aktualisieren
+            document.querySelectorAll('.nav-item[data-target="meal-plan-view"]').forEach(item => {
+                item.addEventListener('click', function() {
+                    renderMealPlan();
+                });
+            });
+            
+            // Event-Listener für Tab-Wechsel, um Haushaltsaufgaben zu aktualisieren
+            document.querySelectorAll('.nav-item[data-target="tasks-view"]').forEach(item => {
+                item.addEventListener('click', function() {
+                    renderHouseholdTasks();
+                });
+            });
+            
+            // Event-Listener für "Neues Rezept hinzufügen"-Button
+            document.getElementById('add-recipe-button').addEventListener('click', function() {
+                showRecipeForm();
+            });
+            
+            // Event-Listener für Filter-Buttons im Rezeptbuch
+            document.querySelectorAll('#recipe-book-view .filter-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Aktiven Button markieren
+                    document.querySelectorAll('#recipe-book-view .filter-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Rezepte filtern und anzeigen
+                    const category = this.getAttribute('data-category');
+                    renderRecipes(category);
+                });
+            });
+        });
+        
+        // Funktion zum Einrichten der Tabs - als separate Funktion, damit sie auch nach DOM-Änderungen aufgerufen werden kann
+        function setupTabs() {
+            // Alle Navigationselemente mit data-target-Attribut auswählen
+            const navItems = document.querySelectorAll('[data-target]');
+            
+            // Überprüfen, ob Navigationselemente gefunden wurden
+            if (navItems.length === 0) {
+                console.error("Keine Navigationselemente mit 'data-target'-Attribut gefunden.");
+                return;
+            }
+            
+            // Alle Content-Sections auswählen
+            const contentSections = document.querySelectorAll('.content-section');
+            
+            // Überprüfen, ob Content-Sections gefunden wurden
+            if (contentSections.length === 0) {
+                console.error("Keine Inhaltsbereiche mit der Klasse 'content-section' gefunden.");
+                return;
+            }
+            
+            // Funktion zum Umschalten der Tabs
+            function switchTab(targetId) {
+                try {
+                    // Alle Content-Sections verstecken
+                    contentSections.forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    
+                    // Alle Navigationselemente deaktivieren
+                    navItems.forEach(item => {
+                        if (item.classList.contains('nav-item')) {
+                            item.classList.remove('active');
+                        }
+                    });
+                    
+                    // Ziel-Content-Section anzeigen
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        
+                        // Entsprechendes Navigationselement aktivieren
+                        const activeNavItems = document.querySelectorAll(`[data-target="${targetId}"]`);
+                        activeNavItems.forEach(navItem => {
+                            if (navItem.classList.contains('nav-item')) {
+                                navItem.classList.add('active');
+                            }
+                        });
+                    } else {
+                        console.error(`Content-Section mit ID '${targetId}' nicht gefunden.`);
+                    }
+                } catch (error) {
+                    console.error("Fehler beim Tabwechsel:", error);
+                }
+            }
+            
+            // Click-Event-Listener für alle Navigationselemente
+            navItems.forEach(item => {
+                // Vorherige Event-Listener entfernen, um Doppelauslösungen zu vermeiden
+                item.removeEventListener('click', handleNavClick);
+                // Neuen Event-Listener hinzufügen
+                item.addEventListener('click', handleNavClick);
+            });
+            
+            // Event-Handler-Funktion für die Navigation
+            function handleNavClick(event) {
+                event.preventDefault();
+                const targetId = this.getAttribute('data-target');
+                if (targetId) {
+                    switchTab(targetId);
+                }
+            }
+            
+            // Zusätzlich die "Zum X"-Buttons mit der Tabfunktionalität verbinden
+            const actionButtons = document.querySelectorAll('.button[data-target]');
+            actionButtons.forEach(button => {
+                // Vorherige Event-Listener entfernen
+                button.removeEventListener('click', handleButtonClick);
+                // Neuen Event-Listener hinzufügen
+                button.addEventListener('click', handleButtonClick);
+            });
+            
+            // Event-Handler-Funktion für Aktionsbuttons
+            function handleButtonClick(event) {
+                event.preventDefault();
+                const targetId = this.getAttribute('data-target');
+                if (targetId) {
+                    // Tabs umschalten
+                    const navItem = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+                    if (navItem) {
+                        navItem.click();
+                    }
+                }
+            }
+        }
+
+        // MEAL PLAN FUNCTIONALITY
+        
+        // Standard-Essensplan, falls keiner im localStorage existiert
+        const defaultMealPlan = {
+            monday: { breakfast: '', lunch: '', dinner: '' },
+            tuesday: { breakfast: '', lunch: '', dinner: '' },
+            wednesday: { breakfast: '', lunch: '', dinner: '' },
+            thursday: { breakfast: '', lunch: '', dinner: '' },
+            friday: { breakfast: '', lunch: '', dinner: '' },
+            saturday: { breakfast: '', lunch: '', dinner: '' },
+            sunday: { breakfast: '', lunch: '', dinner: '' }
+        };
+
+        const dayNames = {
+            monday: 'Montag',
+            tuesday: 'Dienstag', 
+            wednesday: 'Mittwoch',
+            thursday: 'Donnerstag',
+            friday: 'Freitag',
+            saturday: 'Samstag',
+            sunday: 'Sonntag'
+        };
+
+        const mealTypes = {
+            breakfast: 'Frühstück',
+            lunch: 'Mittagessen', 
+            dinner: 'Abendessen'
+        };
+
+        // Essensplan initialisieren
+        function initMealPlan() {
+            if (!getMealPlan()) {
+                saveMealPlan(defaultMealPlan);
+            }
+            
+            renderMealPlan();
+            setupMealPlanEventListeners();
+        }
+        
+        // Essensplan rendern
+        function renderMealPlan() {
+            const container = document.getElementById('meal-plan-week');
+            if (!container) return;
+            
+            const mealPlan = getMealPlan();
+            container.innerHTML = '';
+            
+            Object.keys(dayNames).forEach(dayKey => {
+                const dayElement = createMealPlanDay(dayKey, mealPlan[dayKey]);
+                container.appendChild(dayElement);
+            });
+        }
+        
+        // Einzelnen Tag erstellen
+        function createMealPlanDay(dayKey, dayMeals) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'meal-plan-day';
+            
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'meal-plan-day-header';
+            dayHeader.textContent = dayNames[dayKey];
+            
+            dayElement.appendChild(dayHeader);
+            
+            Object.keys(mealTypes).forEach(mealKey => {
+                const mealSlot = createMealSlot(dayKey, mealKey, dayMeals[mealKey]);
+                dayElement.appendChild(mealSlot);
+            });
+            
+            return dayElement;
+        }
+        
+        // Mahlzeit-Slot erstellen
+        function createMealSlot(dayKey, mealKey, mealContent) {
+            const mealSlot = document.createElement('div');
+            mealSlot.className = `meal-slot ${mealContent ? 'has-meal' : ''}`;
+            mealSlot.setAttribute('data-day', dayKey);
+            mealSlot.setAttribute('data-meal', mealKey);
+            
+            const label = document.createElement('div');
+            label.className = 'meal-slot-label';
+            label.textContent = mealTypes[mealKey];
+            
+            const content = document.createElement('div');
+            content.className = 'meal-slot-content';
+            
+            if (mealContent) {
+                content.textContent = mealContent;
+            } else {
+                content.innerHTML = '<span class="meal-slot-placeholder">Klicken zum Hinzufügen</span>';
+            }
+            
+            // Aktions-Buttons
+            const actions = document.createElement('div');
+            actions.className = 'meal-slot-actions';
+            
+            if (mealContent) {
+                actions.innerHTML = `
+                    <button class="meal-action-btn edit-meal-btn" title="Bearbeiten">✏️</button>
+                    <button class="meal-action-btn delete-meal-btn" title="Löschen">🗑️</button>
+                `;
+            }
+            
+            mealSlot.appendChild(label);
+            mealSlot.appendChild(content);
+            mealSlot.appendChild(actions);
+            
+            return mealSlot;
+        }
+        
+        // Event-Listener für Essensplan einrichten
+        function setupMealPlanEventListeners() {
+            // Woche leeren Button - Event-Listener nur einmal hinzufügen
+            const clearWeekBtn = document.getElementById('clear-week-btn');
+            if (clearWeekBtn && !clearWeekBtn.hasEventListener) {
+                clearWeekBtn.addEventListener('click', function() {
+                    if (confirm('Möchtest du wirklich den gesamten Essensplan für diese Woche löschen?')) {
+                        saveMealPlan(defaultMealPlan);
+                        renderMealPlan();
+                        updateDashboardMeals();
+                    }
+                });
+                clearWeekBtn.hasEventListener = true;
+            }
+            
+            // Aus Rezeptbuch hinzufügen Button - Event-Listener nur einmal hinzufügen
+            const copyFromRecipeBtn = document.getElementById('copy-from-recipe-btn');
+            if (copyFromRecipeBtn && !copyFromRecipeBtn.hasEventListener) {
+                copyFromRecipeBtn.addEventListener('click', function() {
+                    showRecipeSelectionModal();
+                });
+                copyFromRecipeBtn.hasEventListener = true;
+            }
+            
+            // Event-Delegation für Meal-Slots - Container nur einmal einrichten
+            const mealPlanWeek = document.getElementById('meal-plan-week');
+            if (mealPlanWeek && !mealPlanWeek.hasEventListener) {
+                mealPlanWeek.addEventListener('click', function(e) {
+                    const mealSlot = e.target.closest('.meal-slot');
+                    if (!mealSlot) return;
+                    
+                    const dayKey = mealSlot.getAttribute('data-day');
+                    const mealKey = mealSlot.getAttribute('data-meal');
+                    
+                    if (e.target.classList.contains('edit-meal-btn')) {
+                        showMealForm(dayKey, mealKey);
+                    } else if (e.target.classList.contains('delete-meal-btn')) {
+                        deleteMeal(dayKey, mealKey);
+                    } else if (!e.target.closest('.meal-slot-actions')) {
+                        showMealForm(dayKey, mealKey);
+                    }
+                });
+                mealPlanWeek.hasEventListener = true;
+            }
+        }
+        
+        // Mahlzeit-Formular anzeigen
+        function showMealForm(dayKey, mealKey, recipeId = null) {
+            const mealPlan = getMealPlan();
+            const currentMeal = mealPlan[dayKey][mealKey];
+            
+            // Prüfen, ob bereits ein Modal-Overlay existiert und entfernen
+            const existingOverlay = document.querySelector('.modal-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            
+            // Vereinfachtes Formular - nur eigene Eingabe
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>${currentMeal ? 'Mahlzeit bearbeiten' : 'Neue Mahlzeit hinzufügen'}</h2>
+                    <p>${dayNames[dayKey]} - ${mealTypes[mealKey]}</p>
+                </div>
+                <form id="meal-form">
+                    <div class="meal-form-field">
+                        <label for="meal-name">Mahlzeit:</label>
+                        <input type="text" id="meal-name" placeholder="z.B. Spaghetti Bolognese" value="${currentMeal || ''}" required>
+                    </div>
+                    
+                    <div class="meal-form-field">
+                        <label for="meal-notes">Notizen (optional):</label>
+                        <textarea id="meal-notes" placeholder="z.B. Extra scharf für Papa"></textarea>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 15px 0; padding: 15px; background-color: var(--bg-card); border-radius: 8px;">
+                        <p style="margin: 0 0 10px 0; color: #AAA;">Oder wähle ein Rezept aus:</p>
+                        <button type="button" id="choose-recipe-btn" class="button" style="background-color: var(--green-color);">📚 Rezept auswählen</button>
+                    </div>
+                    
+                    <div class="meal-form-buttons">
+                        <button type="button" id="cancel-meal-form" class="button" style="background-color: #777;">Abbrechen</button>
+                        ${currentMeal ? `<button type="button" id="delete-meal-form" class="button" style="background-color: #f44336;">Löschen</button>` : ''}
+                        <button type="submit" class="button">Speichern</button>
+                    </div>
+                </form>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener für das Formular
+            setTimeout(() => {
+                // Rezept auswählen Button
+                document.getElementById('choose-recipe-btn').addEventListener('click', function() {
+                    // Aktuelles Modal schließen
+                    modalOverlay.remove();
+                    
+                    // Rezept-Auswahl öffnen
+                    showRecipeSelectionForMealSlot(dayKey, mealKey);
+                });
+                
+                // Formular Submit
+                document.getElementById('meal-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const mealName = document.getElementById('meal-name').value.trim();
+                    const mealNotes = document.getElementById('meal-notes').value.trim();
+                    
+                    if (!mealName) {
+                        alert('Bitte gib einen Namen für die Mahlzeit ein.');
+                        return;
+                    }
+                    
+                    let mealContent = mealName;
+                    if (mealNotes) {
+                        mealContent += ` (${mealNotes})`;
+                    }
+                    
+                    const mealPlan = getMealPlan();
+                    mealPlan[dayKey][mealKey] = mealContent;
+                    saveMealPlan(mealPlan);
+                    
+                    modalOverlay.remove();
+                    renderMealPlan();
+                    updateDashboardMeals();
+                });
+                
+                // Abbrechen Button
+                document.getElementById('cancel-meal-form').addEventListener('click', function() {
+                    modalOverlay.remove();
+                });
+                
+                // Löschen Button
+                const deleteBtn = document.getElementById('delete-meal-form');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function() {
+                        if (confirm('Diese Mahlzeit wirklich löschen?')) {
+                            deleteMeal(dayKey, mealKey);
+                            modalOverlay.remove();
+                        }
+                    });
+                }
+            }, 0);
+        }
+        
+        // Vereinfachte Rezept-Auswahl für Meal-Slot 
+        function showRecipeSelectionForMealSlot(dayKey, mealKey) {
+            const recipes = getRecipes();
+            
+            if (recipes.length === 0) {
+                alert('Keine Rezepte gefunden. Füge zuerst Rezepte im Rezeptbuch hinzu.');
+                return;
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.maxWidth = '800px';
+            
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>Rezept für ${dayNames[dayKey]} ${mealTypes[mealKey]} auswählen</h2>
+                </div>
+                <div class="recipe-selection-grid">
+                    ${recipes.map(recipe => `
+                        <div class="recipe-selection-item" data-recipe-id="${recipe.id}">
+                            <div class="recipe-selection-title">${recipe.title}</div>
+                            <div class="recipe-selection-meta">${recipe.category} • ${recipe.cookTime}</div>
+                            <div class="recipe-selection-description">${recipe.description}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="cancel-recipe-selection" class="button" style="background-color: #777;">Abbrechen</button>
+                </div>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener
+            setTimeout(() => {
+                // Rezept-Auswahl
+                document.querySelectorAll('.recipe-selection-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const recipeId = this.getAttribute('data-recipe-id');
+                        const recipe = recipes.find(r => r.id === recipeId);
+                        
+                        if (recipe) {
+                            // Rezept direkt zum Essensplan hinzufügen
+                            const mealPlan = getMealPlan();
+                            mealPlan[dayKey][mealKey] = recipe.title;
+                            saveMealPlan(mealPlan);
+                            
+                            modalOverlay.remove();
+                            renderMealPlan();
+                            updateDashboardMeals();
+                            
+                            alert(`"${recipe.title}" wurde zu ${dayNames[dayKey]} ${mealTypes[mealKey]} hinzugefügt!`);
+                        }
+                    });
+                });
+                
+                // Abbrechen Button
+                document.getElementById('cancel-recipe-selection').addEventListener('click', function() {
+                    modalOverlay.remove();
+                });
+                
+                // Modal schließen bei Klick außerhalb
+                modalOverlay.addEventListener('click', function(e) {
+                    if (e.target === modalOverlay) {
+                        modalOverlay.remove();
+                    }
+                });
+            }, 0);
+        }
+        
+        // Rezept-Auswahl Modal für allgemeine Rezept-zu-Essensplan-Zuweisung
+        function showRecipeSelectionModal() {
+            const recipes = getRecipes();
+            
+            if (recipes.length === 0) {
+                alert('Keine Rezepte gefunden. Füge zuerst Rezepte im Rezeptbuch hinzu.');
+                return;
+            }
+            
+            // Prüfen, ob bereits ein Modal-Overlay existiert und entfernen
+            const existingOverlay = document.querySelector('.modal-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.maxWidth = '900px';
+            
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>Rezept zum Essensplan hinzufügen</h2>
+                    <p>Wähle ein Rezept und den gewünschten Zeitpunkt aus</p>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>1. Rezept auswählen</h3>
+                    <div class="recipe-selection-grid" id="recipe-selection-for-plan">
+                        ${recipes.map(recipe => `
+                            <div class="recipe-selection-item" data-recipe-id="${recipe.id}">
+                                <div class="recipe-selection-title">${recipe.title}</div>
+                                <div class="recipe-selection-meta">${recipe.category} • ${recipe.cookTime}</div>
+                                <div class="recipe-selection-description">${recipe.description}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div id="day-meal-selection" style="display: none;">
+                    <h3>2. Tag und Mahlzeit auswählen</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0;">
+                        ${Object.keys(dayNames).map(dayKey => `
+                            <div style="background-color: var(--bg-card); border-radius: 8px; padding: 15px;">
+                                <h4 style="color: var(--primary-color); margin-top: 0;">${dayNames[dayKey]}</h4>
+                                ${Object.keys(mealTypes).map(mealKey => `
+                                    <button class="meal-assignment-btn button" data-day="${dayKey}" data-meal="${mealKey}" style="width: 100%; margin: 5px 0; font-size: 0.9em;">
+                                        ${mealTypes[mealKey]}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="cancel-recipe-to-plan" class="button" style="background-color: #777;">Abbrechen</button>
+                </div>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener
+            setTimeout(() => {
+                let selectedRecipe = null;
+                
+                // Rezept-Auswahl
+                document.querySelectorAll('#recipe-selection-for-plan .recipe-selection-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        // Alle anderen deselektieren
+                        document.querySelectorAll('#recipe-selection-for-plan .recipe-selection-item').forEach(i => {
+                            i.classList.remove('selected');
+                        });
+                        
+                        // Dieses Element selektieren
+                        this.classList.add('selected');
+                        
+                        const recipeId = this.getAttribute('data-recipe-id');
+                        selectedRecipe = recipes.find(r => r.id === recipeId);
+                        
+                        console.log('Rezept für Essensplan ausgewählt:', selectedRecipe.title); // Debug
+                        
+                        // Tag/Mahlzeit-Auswahl anzeigen
+                        document.getElementById('day-meal-selection').style.display = 'block';
+                    });
+                });
+                
+                // Mahlzeit-Zuweisung
+                document.querySelectorAll('.meal-assignment-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        if (!selectedRecipe) {
+                            alert('Bitte wähle zuerst ein Rezept aus.');
+                            return;
+                        }
+                        
+                        const dayKey = this.getAttribute('data-day');
+                        const mealKey = this.getAttribute('data-meal');
+                        
+                        console.log('Zuweisen:', selectedRecipe.title, 'zu', dayNames[dayKey], mealTypes[mealKey]); // Debug
+                        
+                        // Mahlzeit mit Rezept setzen
+                        const mealPlan = getMealPlan();
+                        mealPlan[dayKey][mealKey] = selectedRecipe.title;
+                        saveMealPlan(mealPlan);
+                        
+                        modalOverlay.remove();
+                        renderMealPlan();
+                        updateDashboardMeals();
+                        
+                        // Erfolgs-Nachricht
+                        alert(`"${selectedRecipe.title}" wurde zu ${dayNames[dayKey]} ${mealTypes[mealKey]} hinzugefügt!`);
+                    });
+                });
+                
+                // Abbrechen Button
+                document.getElementById('cancel-recipe-to-plan').addEventListener('click', function() {
+                    modalOverlay.remove();
+                });
+                
+                // Modal schließen bei Klick außerhalb
+                modalOverlay.addEventListener('click', function(e) {
+                    if (e.target === modalOverlay) {
+                        modalOverlay.remove();
+                    }
+                });
+            }, 0);
+        }
+        
+        // Mahlzeit löschen
+        function deleteMeal(dayKey, mealKey) {
+            const mealPlan = getMealPlan();
+            mealPlan[dayKey][mealKey] = '';
+            saveMealPlan(mealPlan);
+            renderMealPlan();
+            updateDashboardMeals();
+        }
+        
+        // Dashboard-Mahlzeiten aktualisieren
+        function updateDashboardMeals() {
+            const mealPlan = getMealPlan();
+            const today = new Date().getDay(); // 0 = Sonntag, 1 = Montag, etc.
+            
+            // Array der Wochentage in der richtigen Reihenfolge (Montag = 0)
+            const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const todayKey = weekDays[(today + 6) % 7]; // Umrechnung: Sonntag (0) → saturday (5), Montag (1) → sunday (6), etc.
+            
+            const todayMeals = mealPlan[todayKey];
+            
+            // Dashboard Meal Items finden und aktualisieren
+            const mealItems = document.querySelectorAll('#dashboard-content .meal-item');
+            if (mealItems.length >= 3) {
+                // Frühstück
+                const breakfastSpan = mealItems[0].querySelector('span');
+                if (breakfastSpan) {
+                    breakfastSpan.textContent = todayMeals.breakfast || '-';
+                }
+                
+                // Mittagessen
+                const lunchSpan = mealItems[1].querySelector('span');
+                if (lunchSpan) {
+                    lunchSpan.textContent = todayMeals.lunch || '-';
+                }
+                
+                // Abendessen
+                const dinnerSpan = mealItems[2].querySelector('span');
+                if (dinnerSpan) {
+                    dinnerSpan.textContent = todayMeals.dinner || '-';
+                }
+            }
+        }
+        
+        // Essensplan aus localStorage laden
+        function getMealPlan() {
+            const mealPlanJSON = localStorage.getItem('mealPlan');
+            return mealPlanJSON ? JSON.parse(mealPlanJSON) : null;
+        }
+        
+        // Essensplan im localStorage speichern
+        function saveMealPlan(mealPlan) {
+            localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
+        }
+        
+        // HOUSEHOLD TASKS FUNCTIONALITY
+        
+        // Standard-Haushaltsaufgaben und Familienmitglieder
+        const familyMembers = {
+            emma: { name: 'Emma', color: 'var(--pink-color)', dotClass: 'dot-pink' },
+            tim: { name: 'Tim', color: 'var(--orange-color)', dotClass: 'dot-orange' },
+            mama: { name: 'Mama', color: 'var(--blue-color)', dotClass: 'dot-blue' },
+            papa: { name: 'Papa', color: 'var(--green-color)', dotClass: 'dot-green' }
+        };
+
+        const weekDaysGerman = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+        const weekDaysKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        // Standard-Haushaltsaufgaben, falls keine im localStorage existieren
+        const defaultHouseholdTasks = [
+            {
+                id: 'task_1',
+                name: 'Tisch decken',
+                assignments: {
+                    monday: 'emma', tuesday: 'tim', wednesday: 'emma', 
+                    thursday: 'tim', friday: 'emma', saturday: 'papa', sunday: 'mama'
+                },
+                completed: {
+                    monday: false, tuesday: false, wednesday: false, 
+                    thursday: false, friday: false, saturday: false, sunday: false
+                }
+            },
+            {
+                id: 'task_2', 
+                name: 'Abwasch',
+                assignments: {
+                    monday: 'tim', tuesday: 'emma', wednesday: 'tim', 
+                    thursday: 'emma', friday: 'tim', saturday: 'mama', sunday: 'papa'
+                },
+                completed: {
+                    monday: false, tuesday: false, wednesday: false, 
+                    thursday: false, friday: false, saturday: false, sunday: false
+                }
+            },
+            {
+                id: 'task_3',
+                name: 'Müll rausbringen', 
+                assignments: {
+                    monday: 'papa', tuesday: 'mama', wednesday: 'papa', 
+                    thursday: 'mama', friday: 'papa', saturday: 'tim', sunday: 'emma'
+                },
+                completed: {
+                    monday: false, tuesday: false, wednesday: false, 
+                    thursday: false, friday: false, saturday: false, sunday: false
+                }
+            },
+            {
+                id: 'task_4',
+                name: 'Wäsche waschen',
+                assignments: {
+                    monday: 'mama', tuesday: '', wednesday: 'mama', 
+                    thursday: '', friday: 'papa', saturday: '', sunday: ''
+                },
+                completed: {
+                    monday: false, tuesday: false, wednesday: false, 
+                    thursday: false, friday: false, saturday: false, sunday: false
+                }
+            }
+        ];
+
+        // Haushaltsaufgaben initialisieren
+        function initHouseholdTasks() {
+            if (!getHouseholdTasks()) {
+                saveHouseholdTasks(defaultHouseholdTasks);
+            }
+            
+            renderHouseholdTasks();
+            setupHouseholdTasksEventListeners();
+            updateDashboardTasks(); // Dashboard initial aktualisieren
+        }
+
+        // Event-Listener für Haushaltsaufgaben einrichten
+        function setupHouseholdTasksEventListeners() {
+            // Neue Aufgabe hinzufügen Button
+            const addTaskBtn = document.getElementById('add-task-btn');
+            if (addTaskBtn && !addTaskBtn.hasEventListener) {
+                addTaskBtn.addEventListener('click', function() {
+                    showTaskForm();
+                });
+                addTaskBtn.hasEventListener = true;
+            }
+            
+            // Aufgaben rotieren Button
+            const rotateTasksBtn = document.getElementById('rotate-tasks-btn');
+            if (rotateTasksBtn && !rotateTasksBtn.hasEventListener) {
+                rotateTasksBtn.addEventListener('click', function() {
+                    if (confirm('Möchtest du alle Aufgaben um eine Position rotieren?')) {
+                        rotateTasks();
+                    }
+                });
+                rotateTasksBtn.hasEventListener = true;
+            }
+            
+            // Woche zurücksetzen Button
+            const resetWeekBtn = document.getElementById('reset-week-btn');
+            if (resetWeekBtn && !resetWeekBtn.hasEventListener) {
+                resetWeekBtn.addEventListener('click', function() {
+                    if (confirm('Möchtest du alle erledigten Aufgaben für diese Woche zurücksetzen?')) {
+                        resetWeekTasks();
+                    }
+                });
+                resetWeekBtn.hasEventListener = true;
+            }
+        }
+
+        // Haushaltsaufgaben rendern
+        function renderHouseholdTasks() {
+            const container = document.getElementById('tasks-table-container');
+            if (!container) return;
+            
+            const tasks = getHouseholdTasks();
+            
+            // Tabelle erstellen
+            let tableHTML = `
+                <table class="rotation-table">
+                    <thead>
+                        <tr>
+                            <th>Aufgabe</th>
+                            ${weekDaysGerman.map(day => `<th>${day}</th>`).join('')}
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tasks.map(task => `
+                            <tr data-task-id="${task.id}">
+                                <td><strong>${task.name}</strong></td>
+                                ${weekDaysKeys.map(dayKey => {
+                                    const assignedMember = task.assignments[dayKey];
+                                    const isCompleted = task.completed[dayKey];
+                                    
+                                    if (!assignedMember) {
+                                        return '<td></td>';
+                                    }
+                                    
+                                    const member = familyMembers[assignedMember];
+                                    return `
+                                        <td style="text-align: center;">
+                                            <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                                                <span class="dot ${member.dotClass}"></span>
+                                                <input type="checkbox" 
+                                                       data-task-id="${task.id}" 
+                                                       data-day="${dayKey}" 
+                                                       ${isCompleted ? 'checked' : ''}
+                                                       title="Als erledigt markieren">
+                                            </div>
+                                        </td>
+                                    `;
+                                }).join('')}
+                                <td style="text-align: center;">
+                                    <button class="recipe-action-btn edit-recipe" onclick="editTask('${task.id}')" title="Bearbeiten">✏️</button>
+                                    <button class="recipe-action-btn delete-recipe" onclick="deleteTask('${task.id}')" title="Löschen">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+            
+            // Event-Listener für Checkboxen hinzufügen
+            container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    const day = this.getAttribute('data-day');
+                    toggleTaskCompletion(taskId, day, this.checked);
+                });
+            });
+            
+            // Wochenübersicht rendern
+            renderTasksSummary();
+        }
+
+        // Wochenübersicht rendern
+        function renderTasksSummary() {
+            const container = document.getElementById('tasks-summary');
+            if (!container) return;
+            
+            const tasks = getHouseholdTasks();
+            const memberStats = {};
+            const todayStats = getTodayTasksStats();
+            
+            // Statistiken berechnen
+            Object.values(familyMembers).forEach(member => {
+                memberStats[member.name] = { total: 0, completed: 0, percentage: 0 };
+            });
+            
+            tasks.forEach(task => {
+                weekDaysKeys.forEach(dayKey => {
+                    const assignedMember = task.assignments[dayKey];
+                    if (assignedMember && familyMembers[assignedMember]) {
+                        const memberName = familyMembers[assignedMember].name;
+                        memberStats[memberName].total++;
+                        if (task.completed[dayKey]) {
+                            memberStats[memberName].completed++;
+                        }
+                    }
+                });
+            });
+            
+            // Prozentsätze berechnen
+            Object.keys(memberStats).forEach(memberName => {
+                const stats = memberStats[memberName];
+                stats.percentage = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+            });
+            
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    ${Object.keys(memberStats).map(memberName => {
+                        const stats = memberStats[memberName];
+                        const memberKey = Object.keys(familyMembers).find(key => familyMembers[key].name === memberName);
+                        const member = familyMembers[memberKey];
+                        
+                        return `
+                            <div style="text-align: center; padding: 15px; background-color: var(--bg-dark); border-radius: 8px;">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                                    <span class="dot ${member.dotClass}"></span>
+                                    <strong>${memberName}</strong>
+                                </div>
+                                <div style="font-size: 1.2em; margin-bottom: 5px;">${stats.completed} / ${stats.total}</div>
+                                <div style="color: ${stats.percentage >= 80 ? '#4CAF50' : stats.percentage >= 50 ? '#FF9800' : '#f44336'};">
+                                    ${stats.percentage}% erledigt
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background-color: var(--bg-dark); border-radius: 8px;">
+                    <h4 style="color: var(--primary-color); margin-top: 0;">Heute (${weekDaysGerman[new Date().getDay() - 1] || 'Sonntag'})</h4>
+                    <p>${todayStats.completed} von ${todayStats.total} Aufgaben erledigt</p>
+                    <div class="budget-progress" style="margin: 10px 0;">
+                        <div class="budget-bar" style="width: ${todayStats.percentage}%;"></div>
+                    </div>
+                    <div style="color: ${todayStats.percentage >= 80 ? '#4CAF50' : todayStats.percentage >= 50 ? '#FF9800' : '#f44336'};">
+                        ${todayStats.percentage}% des Tages geschafft
+                    </div>
+                </div>
+            `;
+        }
+
+        // Heute-Statistiken abrufen
+        function getTodayTasksStats() {
+            const tasks = getHouseholdTasks();
+            const today = new Date().getDay(); // 0 = Sonntag, 1 = Montag, etc.
+            const todayKey = weekDaysKeys[(today + 6) % 7]; // Umrechnung
+            
+            let total = 0;
+            let completed = 0;
+            
+            tasks.forEach(task => {
+                if (task.assignments[todayKey]) {
+                    total++;
+                    if (task.completed[todayKey]) {
+                        completed++;
+                    }
+                }
+            });
+            
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            return { total, completed, percentage };
+        }
+
+        // Aufgabe als erledigt/nicht erledigt markieren
+        function toggleTaskCompletion(taskId, day, completed) {
+            const tasks = getHouseholdTasks();
+            const task = tasks.find(t => t.id === taskId);
+            
+            if (task) {
+                task.completed[day] = completed;
+                saveHouseholdTasks(tasks);
+                renderTasksSummary(); // Nur Statistiken aktualisieren
+                updateDashboardTasks(); // Dashboard aktualisieren
+            }
+        }
+
+        // Aufgaben rotieren (eine Position nach rechts)
+        function rotateTasks() {
+            const tasks = getHouseholdTasks();
+            
+            tasks.forEach(task => {
+                const assignments = { ...task.assignments };
+                const completed = { ...task.completed };
+                
+                // Rotation: Sonntag → Montag, Montag → Dienstag, etc.
+                const rotatedAssignments = {};
+                const rotatedCompleted = {};
+                
+                // Sonntag → Montag
+                rotatedAssignments.monday = assignments.sunday;
+                rotatedCompleted.monday = completed.sunday;
+                
+                // Restliche Tage verschieben
+                for (let i = 1; i < weekDaysKeys.length; i++) {
+                    rotatedAssignments[weekDaysKeys[i]] = assignments[weekDaysKeys[i - 1]];
+                    rotatedCompleted[weekDaysKeys[i]] = completed[weekDaysKeys[i - 1]];
+                }
+                
+                task.assignments = rotatedAssignments;
+                task.completed = rotatedCompleted;
+            });
+            
+            saveHouseholdTasks(tasks);
+            renderHouseholdTasks();
+            updateDashboardTasks();
+            alert('Aufgaben wurden rotiert!');
+        }
+
+        // Woche zurücksetzen (alle Checkboxen unchecked)
+        function resetWeekTasks() {
+            const tasks = getHouseholdTasks();
+            
+            tasks.forEach(task => {
+                weekDaysKeys.forEach(day => {
+                    task.completed[day] = false;
+                });
+            });
+            
+            saveHouseholdTasks(tasks);
+            renderHouseholdTasks();
+            updateDashboardTasks();
+            alert('Alle Aufgaben für diese Woche wurden zurückgesetzt!');
+        }
+
+        // Aufgabe bearbeiten
+        function editTask(taskId) {
+            showTaskForm(taskId);
+        }
+
+        // Aufgabe löschen
+        function deleteTask(taskId) {
+            if (confirm('Diese Aufgabe wirklich löschen?')) {
+                const tasks = getHouseholdTasks();
+                const filteredTasks = tasks.filter(task => task.id !== taskId);
+                saveHouseholdTasks(filteredTasks);
+                renderHouseholdTasks();
+                updateDashboardTasks();
+            }
+        }
+
+        // Aufgaben-Formular anzeigen
+        function showTaskForm(taskId = null) {
+            const tasks = getHouseholdTasks();
+            const task = taskId ? tasks.find(t => t.id === taskId) : null;
+            
+            // Prüfen, ob bereits ein Modal-Overlay existiert und entfernen
+            const existingOverlay = document.querySelector('.modal-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>${task ? 'Aufgabe bearbeiten' : 'Neue Aufgabe hinzufügen'}</h2>
+                </div>
+                <form id="task-form">
+                    <div class="meal-form-field">
+                        <label for="task-name">Aufgabe:</label>
+                        <input type="text" id="task-name" placeholder="z.B. Staubsaugen" value="${task ? task.name : ''}" required>
+                    </div>
+                    
+                    <div class="meal-form-field">
+                        <label>Zuweisungen für die Woche:</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
+                            ${weekDaysKeys.map((dayKey, index) => `
+                                <div style="background-color: var(--bg-card); padding: 10px; border-radius: 6px;">
+                                    <label style="font-weight: bold; color: var(--primary-color);">${weekDaysGerman[index]}:</label>
+                                    <select id="assign-${dayKey}" style="width: 100%; margin-top: 5px; padding: 5px; background-color: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                                        <option value="">Niemand</option>
+                                        ${Object.keys(familyMembers).map(memberKey => `
+                                            <option value="${memberKey}" ${task && task.assignments[dayKey] === memberKey ? 'selected' : ''}>
+                                                ${familyMembers[memberKey].name}
+                                            </option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="meal-form-buttons">
+                        <button type="button" id="cancel-task-form" class="button" style="background-color: #777;">Abbrechen</button>
+                        ${task ? `<button type="button" id="delete-task-form" class="button" style="background-color: #f44336;">Löschen</button>` : ''}
+                        <button type="submit" class="button">Speichern</button>
+                    </div>
+                </form>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener für das Formular
+            setTimeout(() => {
+                // Formular Submit
+                document.getElementById('task-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const taskName = document.getElementById('task-name').value.trim();
+                    if (!taskName) {
+                        alert('Bitte gib einen Namen für die Aufgabe ein.');
+                        return;
+                    }
+                    
+                    // Zuweisungen sammeln
+                    const assignments = {};
+                    const completed = {};
+                    
+                    weekDaysKeys.forEach(dayKey => {
+                        assignments[dayKey] = document.getElementById(`assign-${dayKey}`).value;
+                        completed[dayKey] = task ? task.completed[dayKey] : false;
+                    });
+                    
+                    const taskData = {
+                        id: task ? task.id : 'task_' + Date.now(),
+                        name: taskName,
+                        assignments,
+                        completed
+                    };
+                    
+                    const tasks = getHouseholdTasks();
+                    
+                    if (task) {
+                        // Bestehende Aufgabe aktualisieren
+                        const index = tasks.findIndex(t => t.id === task.id);
+                        if (index !== -1) {
+                            tasks[index] = taskData;
+                        }
+                    } else {
+                        // Neue Aufgabe hinzufügen
+                        tasks.push(taskData);
+                    }
+                    
+                    saveHouseholdTasks(tasks);
+                    modalOverlay.remove();
+                    renderHouseholdTasks();
+                    updateDashboardTasks();
+                    
+                    alert(`Aufgabe "${taskName}" wurde ${task ? 'aktualisiert' : 'hinzugefügt'}!`);
+                });
+                
+                // Abbrechen Button
+                document.getElementById('cancel-task-form').addEventListener('click', function() {
+                    modalOverlay.remove();
+                });
+                
+                // Löschen Button
+                const deleteBtn = document.getElementById('delete-task-form');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function() {
+                        if (confirm('Diese Aufgabe wirklich löschen?')) {
+                            deleteTask(task.id);
+                            modalOverlay.remove();
+                        }
+                    });
+                }
+                
+                // Modal schließen bei Klick außerhalb
+                modalOverlay.addEventListener('click', function(e) {
+                    if (e.target === modalOverlay) {
+                        modalOverlay.remove();
+                    }
+                });
+            }, 0);
+        }
+
+        // Dashboard-Aufgaben aktualisieren
+        function updateDashboardTasks() {
+            const tasks = getHouseholdTasks();
+            if (!tasks) return;
+            
+            const today = new Date().getDay(); // 0 = Sonntag, 1 = Montag, etc.
+            const todayKey = weekDaysKeys[(today + 6) % 7]; // Umrechnung
+            
+            // Heutige Aufgaben sammeln
+            const todayTasks = [];
+            tasks.forEach(task => {
+                const assignedMember = task.assignments[todayKey];
+                if (assignedMember) {
+                    const member = familyMembers[assignedMember];
+                    const isCompleted = task.completed[todayKey];
+                    todayTasks.push({
+                        name: task.name,
+                        member: member,
+                        completed: isCompleted
+                    });
+                }
+            });
+            
+            // Dashboard Task Items finden und aktualisieren
+            const taskItems = document.querySelectorAll('#dashboard-content .task-item');
+            
+            // Begrenzte Anzahl von Task-Items verwenden
+            const maxItems = Math.min(taskItems.length, 3);
+            
+            for (let i = 0; i < maxItems; i++) {
+                const taskItem = taskItems[i];
+                const dot = taskItem.querySelector('.dot');
+                const textDiv = taskItem.querySelector('div');
+                
+                if (i < todayTasks.length) {
+                    const task = todayTasks[i];
+                    
+                    // Dot-Klasse aktualisieren
+                    if (dot) {
+                        dot.className = `dot ${task.member.dotClass}`;
+                    }
+                    
+                    // Text und Status aktualisieren
+                    if (textDiv) {
+                        textDiv.innerHTML = task.completed 
+                            ? `<span style="text-decoration: line-through; opacity: 0.6;">${task.name}</span> <span style="color: #4CAF50;">✓</span>`
+                            : task.name;
+                    }
+                } else {
+                    // Wenn weniger Tasks als Items vorhanden sind
+                    if (dot) {
+                        dot.className = 'dot dot-green';
+                    }
+                    if (textDiv) {
+                        textDiv.innerHTML = 'Keine weiteren Aufgaben 🎉';
+                    }
+                }
+            }
+        }
+
+        // Haushaltsaufgaben aus localStorage laden
+        function getHouseholdTasks() {
+            const tasksJSON = localStorage.getItem('householdTasks');
+            return tasksJSON ? JSON.parse(tasksJSON) : null;
+        }
+
+        // Haushaltsaufgaben im localStorage speichern
+        function saveHouseholdTasks(tasks) {
+            localStorage.setItem('householdTasks', JSON.stringify(tasks));
+        }
+        
+        // EINKAUFSLISTEN-FUNKTIONALITÄT
+        
+        // Standardeinkaufslisten, falls keine im localStorage existieren
+        const defaultShoppingLists = [
+            {
+                id: "rewe",
+                name: "REWE",
+                color: "#CC0000",
+                items: [
+                    { name: "Milch", quantity: "2 Liter", completed: false },
+                    { name: "Brot", quantity: "1 Stück", completed: false }
+                ]
+            },
+            {
+                id: "aldi",
+                name: "ALDI",
+                color: "#0066B3",
+                items: [
+                    { name: "Käse", quantity: "200g", completed: false },
+                    { name: "Eier", quantity: "10 Stück", completed: false }
+                ]
+            },
+            {
+                id: "dm",
+                name: "DM",
+                color: "#008C45",
+                items: [
+                    { name: "Zahnpasta", quantity: "1 Tube", completed: false },
+                    { name: "Shampoo", quantity: "1 Flasche", completed: false }
+                ]
+            },
+            {
+                id: "baumarkt",
+                name: "BAUMARKT",
+                color: "#FF6600",
+                items: [
+                    { name: "Schrauben", quantity: "1 Packung", completed: false },
+                    { name: "Farbe", quantity: "2 Liter, weiß", completed: false }
+                ]
+            }
+        ];
+        
+        // Einkaufslisten aus dem localStorage laden oder die Standards verwenden
+        function initShoppingLists() {
+            if (!localStorage.getItem('shoppingLists')) {
+                localStorage.setItem('shoppingLists', JSON.stringify(defaultShoppingLists));
+            }
+            
+            renderShoppingLists();
+        }
+        
+        // Alle Einkaufslisten rendern
+        function renderShoppingLists() {
+            const container = document.getElementById('shopping-lists-container');
+            if (!container) return;
+            
+            let lists = getShoppingLists();
+            
+            // Listen nach leer/nicht leer sortieren
+            lists.sort((a, b) => {
+                const aEmpty = !a.items.some(item => !item.completed);
+                const bEmpty = !b.items.some(item => !item.completed);
+                
+                if (aEmpty && !bEmpty) return 1; // a ist leer, b nicht -> a nach hinten
+                if (!aEmpty && bEmpty) return -1; // a ist nicht leer, b leer -> a nach vorne
+                return 0; // beide leer oder beide nicht leer -> Reihenfolge beibehalten
+            });
+            
+            // Container leeren
+            container.innerHTML = '';
+            
+            // Alle Listen rendern
+            lists.forEach(list => {
+                const listElement = createShoppingListElement(list);
+                container.appendChild(listElement);
+            });
+            
+            // "Neue Liste"-Button hinzufügen
+            const newListButton = document.createElement('div');
+            newListButton.className = 'new-list-card';
+            newListButton.innerHTML = `
+                <button class="button" id="create-new-list" style="width: 80%; max-width: 200px;">+ Neue Liste erstellen</button>
+            `;
+            container.appendChild(newListButton);
+            
+            // Event-Listener für den "Neue Liste"-Button
+            document.getElementById('create-new-list').addEventListener('click', createNewList);
+            
+            // Event-Listener für Checkboxen und Formular-Submits hinzufügen
+            setupEventListeners();
+        }
+        
+        // Eine einzelne Einkaufslisten-Karte erstellen
+        function createShoppingListElement(list) {
+            const listElement = document.createElement('div');
+            // Klasse 'empty' hinzufügen, wenn die Liste keine aktiven Elemente hat
+            const activeItems = list.items.filter(item => !item.completed);
+            const isEmpty = activeItems.length === 0;
+            
+            listElement.className = `shopping-list ${isEmpty ? 'empty' : ''}`;
+            listElement.setAttribute('data-list-id', list.id);
+            
+            // Header mit Ladenname
+            const header = document.createElement('div');
+            header.className = 'shopping-list-header';
+            header.style.backgroundColor = list.color;
+            header.textContent = list.name;
+            
+            // Event-Listener für das Klicken auf den Header bei leeren Listen
+            if (isEmpty) {
+                header.addEventListener('click', function() {
+                    listElement.classList.toggle('empty');
+                });
+            }
+            
+            // Content-Bereich
+            const content = document.createElement('div');
+            content.className = 'shopping-list-content';
+            
+            // Formular zum Hinzufügen neuer Elemente
+            const form = document.createElement('form');
+            form.className = 'shopping-list-form';
+            form.setAttribute('data-list-id', list.id);
+            form.innerHTML = `
+                <div class="shopping-list-inputs">
+                    <input type="text" name="item-name" placeholder="Artikel eingeben" required>
+                    <input type="text" name="item-quantity" placeholder="Menge" required>
+                </div>
+                <button type="submit">+</button>
+            `;
+            
+            // Liste der Artikel
+            const itemsList = document.createElement('ul');
+            itemsList.className = 'shopping-list-items';
+            
+            // Artikel hinzufügen
+            list.items.forEach((item, index) => {
+                const itemElement = document.createElement('li');
+                itemElement.className = 'shopping-list-item' + (item.completed ? ' completed' : '');
+                itemElement.innerHTML = `
+                    <div class="shopping-list-item-name">
+                        <input type="checkbox" data-list-id="${list.id}" data-item-index="${index}" ${item.completed ? 'checked' : ''}>
+                        <span>${item.name}</span>
+                    </div>
+                    <div class="shopping-list-item-quantity">${item.quantity}</div>
+                `;
+                itemsList.appendChild(itemElement);
+            });
+            
+            // Alles zusammenfügen
+            content.appendChild(form);
+            content.appendChild(itemsList);
+            listElement.appendChild(header);
+            listElement.appendChild(content);
+            
+            return listElement;
+        }
+        
+        // Event-Listener für Checkboxen und Formulare einrichten
+        function setupEventListeners() {
+            // Event-Listener für Checkboxen
+            document.querySelectorAll('.shopping-list-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const listId = this.getAttribute('data-list-id');
+                    const itemIndex = parseInt(this.getAttribute('data-item-index'));
+                    toggleItemCompleted(listId, itemIndex);
+                });
+            });
+            
+            // Event-Listener für Formulare
+            document.querySelectorAll('.shopping-list-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const listId = this.getAttribute('data-list-id');
+                    const nameInput = this.querySelector('input[name="item-name"]');
+                    const quantityInput = this.querySelector('input[name="item-quantity"]');
+                    
+                    if (nameInput.value && quantityInput.value) {
+                        addItemToList(listId, nameInput.value, quantityInput.value);
+                        nameInput.value = '';
+                        quantityInput.value = '';
+                    }
+                });
+            });
+            
+            // Event-Listener für den "Neue Liste"-Button wird beim Rendern hinzugefügt
+        }
+        
+        // Artikel als erledigt markieren oder wieder aktivieren
+        function toggleItemCompleted(listId, itemIndex) {
+            const lists = getShoppingLists();
+            const listIndex = lists.findIndex(list => list.id === listId);
+            
+            if (listIndex !== -1 && lists[listIndex].items[itemIndex]) {
+                lists[listIndex].items[itemIndex].completed = !lists[listIndex].items[itemIndex].completed;
+                saveShoppingLists(lists);
+                renderShoppingLists();
+            }
+        }
+        
+        // Neuen Artikel zu einer Liste hinzufügen
+        function addItemToList(listId, name, quantity) {
+            const lists = getShoppingLists();
+            const listIndex = lists.findIndex(list => list.id === listId);
+            
+            if (listIndex !== -1) {
+                lists[listIndex].items.push({
+                    name: name,
+                    quantity: quantity,
+                    completed: false
+                });
+                saveShoppingLists(lists);
+                renderShoppingLists();
+            }
+        }
+        
+        // Dialog zum Erstellen einer neuen Liste
+        function createNewList() {
+            const storeName = prompt('Name des Geschäfts:');
+            if (!storeName) return;
+            
+            const defaultColors = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6'];
+            const randomColor = defaultColors[Math.floor(Math.random() * defaultColors.length)];
+            
+            const newList = {
+                id: 'list_' + Date.now(),
+                name: storeName.toUpperCase(),
+                color: randomColor,
+                items: []
+            };
+            
+            const lists = getShoppingLists();
+            lists.push(newList);
+            saveShoppingLists(lists);
+            renderShoppingLists();
+        }
+        
+        // Einkaufslisten aus dem localStorage laden
+        function getShoppingLists() {
+            const listsJSON = localStorage.getItem('shoppingLists');
+            return listsJSON ? JSON.parse(listsJSON) : defaultShoppingLists;
+        }
+        
+        // Einkaufslisten im localStorage speichern
+        function saveShoppingLists(lists) {
+            localStorage.setItem('shoppingLists', JSON.stringify(lists));
+        }
+        
+        // KONTAKTE-FUNKTIONALITÄT
+        
+        // Standard-Kontakte, falls keine im localStorage existieren
+        const defaultContacts = [
+            {
+                id: "contact_1",
+                name: "Oma & Opa Müller",
+                category: "Familie",
+                color: "#4285F4", // primary-color
+                initials: "OO",
+                address: "Gartenstraße 15, 65760 Eschborn",
+                phone: "06196 / 12345",
+                mobile: "0170 / 9876543",
+                email: "oma.mueller@email.de",
+                notes: "",
+                actions: ["Anrufen", "Nachricht"]
+            },
+            {
+                id: "contact_2",
+                name: "Dr. Schmidt",
+                category: "Ärzte",
+                color: "#4CAF50", // green-color
+                initials: "DS",
+                address: "Hauptstraße 42, 63263 Neu-Isenburg",
+                phone: "06102 / 789012",
+                mobile: "",
+                email: "praxis.schmidt@email.de",
+                schedule: "Mo-Fr: 8:00-12:00, 14:00-18:00",
+                notes: "Kinderarzt",
+                actions: ["Anrufen", "Termin"]
+            },
+            {
+                id: "contact_3",
+                name: "Maria Lopez",
+                category: "Schule",
+                color: "#FF4081", // pink-color
+                initials: "ML",
+                address: "Grundschule Buchenbusch, Neu-Isenburg",
+                phone: "06102 / 345678",
+                mobile: "",
+                email: "m.lopez@schule-buchenbusch.de",
+                schedule: "Sprechstunde: Di 14:00-15:30",
+                notes: "Emmas Klassenlehrerin",
+                actions: ["E-Mail", "Termin"]
+            },
+            {
+                id: "contact_4",
+                name: "Familie Weber",
+                category: "Freunde",
+                color: "#9C27B0", // purple-color
+                initials: "FW",
+                address: "Fichtenstraße 8, 63263 Neu-Isenburg",
+                phone: "06102 / 567890",
+                mobile: "0160 / 1234567",
+                email: "familie.weber@email.de",
+                notes: "Nachbarn & Freunde",
+                actions: ["Anrufen", "Nachricht"]
+            },
+            {
+                id: "contact_5",
+                name: "Notruf",
+                category: "Notfälle",
+                color: "#CC0000", // red-color
+                initials: "⚠️",
+                items: [
+                    { label: "Notruf", value: "112" },
+                    { label: "Polizei", value: "110" },
+                    { label: "Giftnotruf", value: "06131 / 19240" },
+                    { label: "Notfallpraxis", value: "06102 / 123456" }
+                ],
+                notes: "Wichtige Notfallnummern",
+                actions: ["Notruf wählen"]
+            }
+        ];
+        
+        // Kontakte aus dem localStorage laden oder die Standards verwenden
+        function initContacts() {
+            console.log("initContacts aufgerufen"); // Debugging
+            
+            if (!localStorage.getItem('contacts')) {
+                console.log("Keine Kontakte im localStorage, setze Standard-Kontakte"); // Debugging
+                localStorage.setItem('contacts', JSON.stringify(defaultContacts));
+            }
+            
+            // Event-Listener für Filter-Buttons
+            document.querySelectorAll('#contacts-view .filter-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Aktiven Button markieren
+                    document.querySelectorAll('#contacts-view .filter-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Kontakte filtern und anzeigen
+                    const category = this.getAttribute('data-category');
+                    renderContacts(category);
+                });
+            });
+            
+            // Initiale Anzeige aller Kontakte
+            renderContacts('Alle');
+        }
+        
+        // Kontakte rendern, optional nach Kategorie gefiltert
+        function renderContacts(category) {
+            console.log("renderContacts aufgerufen mit Kategorie:", category); // Debugging
+            
+            const container = document.getElementById('contacts-grid');
+            if (!container) {
+                console.error("Container 'contacts-grid' nicht gefunden!"); // Debugging
+                return;
+            }
+            
+            // Kontakte laden
+            let contacts = getContacts();
+            
+            // Nach Kategorie filtern, wenn nicht "Alle"
+            if (category && category !== 'Alle') {
+                contacts = contacts.filter(contact => contact.category === category);
+                console.log("Gefilterte Kontakte:", contacts.length); // Debugging
+            }
+            
+            // Container leeren
+            container.innerHTML = '';
+            
+            // Alle Kontakte rendern
+            if (contacts.length === 0) {
+                console.log("Keine Kontakte gefunden!"); // Debugging
+            } else {
+                console.log("Rendere", contacts.length, "Kontakte"); // Debugging
+                contacts.forEach(contact => {
+                    const contactElement = createContactElement(contact);
+                    container.appendChild(contactElement);
+                });
+            }
+            
+            // "Neuer Kontakt"-Button hinzufügen
+            const newContactButton = document.createElement('div');
+            newContactButton.style.backgroundColor = 'var(--bg-card)';
+            newContactButton.style.borderRadius = '8px';
+            newContactButton.style.display = 'flex';
+            newContactButton.style.flexDirection = 'column';
+            newContactButton.style.justifyContent = 'center';
+            newContactButton.style.alignItems = 'center';
+            newContactButton.style.padding = '30px';
+            newContactButton.style.minHeight = '200px';
+            
+            newContactButton.innerHTML = `
+                <div style="width: 80px; height: 80px; border-radius: 50%; background-color: var(--bg-dark); display: flex; justify-content: center; align-items: center; font-size: 2em; color: var(--primary-color); margin-bottom: 20px; border: 2px dashed var(--primary-color); cursor: pointer;">
+                    +
+                </div>
+                <button class="button" id="add-new-contact" style="width: 80%; max-width: 200px; cursor: pointer;">Neuen Kontakt hinzufügen</button>
+            `;
+            
+            container.appendChild(newContactButton);
+            
+            // Event-Listener für "Neuen Kontakt hinzufügen"-Button
+            setTimeout(() => {
+                const addButton = document.getElementById('add-new-contact');
+                if (addButton) {
+                    addButton.addEventListener('click', function() {
+                        console.log("'Neuen Kontakt hinzufügen' Button geklickt");
+                        showContactForm();
+                    });
+                } else {
+                    console.error("Button 'add-new-contact' nicht gefunden!");
+                }
+            }, 0);
+        }
+        
+        // Einen einzelnen Kontakt-Kartenelemente erstellen
+        function createContactElement(contact) {
+            const contactElement = document.createElement('div');
+            contactElement.style.backgroundColor = 'var(--bg-card)';
+            contactElement.style.borderRadius = '8px';
+            contactElement.style.overflow = 'hidden';
+            contactElement.setAttribute('data-contact-id', contact.id);
+            
+            // Header mit Namen und Kategorie
+            let headerHTML = `
+                <div style="padding: 20px; display: flex; gap: 15px; align-items: center; border-bottom: 1px solid var(--border-color);">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background-color: ${contact.color}; display: flex; justify-content: center; align-items: center; font-size: 2em; color: white;">
+                        ${contact.initials}
+                    </div>
+                    <div>
+                        <div style="font-size: 1.2em; font-weight: bold;">${contact.name}</div>
+                        <div style="color: ${contact.color}; font-size: 0.9em;">${contact.category === 'Ärzte' ? contact.notes : contact.category}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Content-Bereich je nach Kontakttyp unterschiedlich gestalten
+            let contentHTML = '';
+            
+            if (contact.category === 'Notfälle') {
+                // Spezialfall für Notfall-Kontakte mit Liste wichtiger Nummern
+                contentHTML = `
+                    <div style="padding: 15px;">
+                        ${contact.items.map(item => `
+                            <div style="display: flex; margin-bottom: 10px;">
+                                <div style="width: 24px; margin-right: 10px; color: #AAA;">${item.label === 'Notruf' ? '🚨' : item.label === 'Polizei' ? '👮' : item.label === 'Giftnotruf' ? '⚕️' : '🏥'}</div>
+                                <div>${item.label}: ${item.value}</div>
+                            </div>
+                        `).join('')}
+                        <div style="display: flex; justify-content: center; margin-top: 15px;">
+                            <button class="button edit-contact-button" data-contact-id="${contact.id}" style="width: 100%;">Kontakt bearbeiten</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Normaler Kontakt mit Adresse, Telefon, etc.
+                contentHTML = `
+                    <div style="padding: 15px;">
+                        ${contact.address ? `
+                            <div style="display: flex; margin-bottom: 10px;">
+                                <div style="width: 24px; margin-right: 10px; color: #AAA;">📍</div>
+                                <div>${contact.address}</div>
+                            </div>
+                        ` : ''}
+                        ${contact.phone ? `
+                            <div style="display: flex; margin-bottom: 10px;">
+                                <div style="width: 24px; margin-right: 10px; color: #AAA;">📞</div>
+                                <div>${contact.phone}</div>
+                            </div>
+                        ` : ''}
+                        ${contact.mobile ? `
+                            <div style="display: flex; margin-bottom: 10px;">
+                                <div style="width: 24px; margin-right: 10px; color: #AAA;">📱</div>
+                                <div>${contact.mobile}</div>
+                            </div>
+                        ` : ''}
+                        ${contact.email ? `
+                            <div style="display: flex; margin-bottom: 10px;">
+                                <div style="width: 24px; margin-right: 10px; color: #AAA;">✉️</div>
+                                <div>${contact.email}</div>
+                            </div>
+                        ` : ''}
+                        ${contact.schedule ? `
+                            <div style="display: flex; margin-bottom: 10px;">
+                                <div style="width: 24px; margin-right: 10px; color: #AAA;">🕒</div>
+                                <div>${contact.schedule}</div>
+                            </div>
+                        ` : ''}
+                        <div style="display: flex; justify-content: center; margin-top: 15px;">
+                            <button class="button edit-contact-button" data-contact-id="${contact.id}" style="width: 100%;">Kontakt bearbeiten</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            contactElement.innerHTML = headerHTML + contentHTML;
+            
+            // Event-Listener für den "Kontakt bearbeiten"-Button
+            setTimeout(() => {
+                const editButton = contactElement.querySelector('.edit-contact-button');
+                if (editButton) {
+                    editButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const contactId = this.getAttribute('data-contact-id');
+                        editContact(contactId);
+                    });
+                }
+            }, 0);
+            
+            return contactElement;
+        }
+        
+        // Formular zum Hinzufügen oder Bearbeiten eines Kontakts anzeigen
+        function showContactForm(contactId = null) {
+            console.log("showContactForm aufgerufen mit contactId:", contactId); // Debugging
+            
+            // Bestehenden Kontakt laden, falls ID angegeben
+            let contact = null;
+            if (contactId) {
+                const contacts = getContacts();
+                contact = contacts.find(c => c.id === contactId);
+                if (!contact) {
+                    console.error("Kontakt mit ID", contactId, "nicht gefunden!");
+                    return;
+                }
+            }
+            
+            // Prüfen, ob bereits ein Modal-Overlay existiert und entfernen
+            const existingOverlay = document.querySelector('.modal-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            
+            // Formular erstellen
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>${contact ? 'Kontakt bearbeiten' : 'Neuen Kontakt hinzufügen'}</h2>
+                </div>
+                <form id="contact-form">
+                    <input type="hidden" id="contact-id" value="${contact ? contact.id : ''}">
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-name">Name:</label>
+                        <input type="text" id="contact-name" required value="${contact ? contact.name : ''}">
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-category">Kategorie:</label>
+                        <select id="contact-category" required>
+                            <option value="Familie" ${contact && contact.category === 'Familie' ? 'selected' : ''}>Familie</option>
+                            <option value="Freunde" ${contact && contact.category === 'Freunde' ? 'selected' : ''}>Freunde</option>
+                            <option value="Schule" ${contact && contact.category === 'Schule' ? 'selected' : ''}>Schule</option>
+                            <option value="Ärzte" ${contact && contact.category === 'Ärzte' ? 'selected' : ''}>Ärzte</option>
+                            <option value="Notfälle" ${contact && contact.category === 'Notfälle' ? 'selected' : ''}>Notfälle</option>
+                        </select>
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-initials">Initialen:</label>
+                        <input type="text" id="contact-initials" maxlength="3" required value="${contact ? contact.initials : ''}">
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-address">Adresse:</label>
+                        <input type="text" id="contact-address" value="${contact && contact.address ? contact.address : ''}">
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-phone">Telefon:</label>
+                        <input type="text" id="contact-phone" value="${contact && contact.phone ? contact.phone : ''}">
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-mobile">Mobiltelefon:</label>
+                        <input type="text" id="contact-mobile" value="${contact && contact.mobile ? contact.mobile : ''}">
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-email">E-Mail:</label>
+                        <input type="email" id="contact-email" value="${contact && contact.email ? contact.email : ''}">
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-schedule">Öffnungszeiten/Sprechstunde:</label>
+                        <input type="text" id="contact-schedule" value="${contact && contact.schedule ? contact.schedule : ''}">
+                    </div>
+                    
+                    <div class="contact-form-field">
+                        <label for="contact-notes">Notizen:</label>
+                        <input type="text" id="contact-notes" value="${contact && contact.notes ? contact.notes : ''}">
+                    </div>
+                    
+                    <div class="contact-form-buttons">
+                        <button type="button" id="cancel-contact-form" class="button" style="background-color: #777;">Abbrechen</button>
+                        ${contact ? `<button type="button" id="delete-contact" class="button" style="background-color: #f44336;">Löschen</button>` : ''}
+                        <button type="submit" class="button">Speichern</button>
+                    </div>
+                </form>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener für das Formular
+            setTimeout(() => {
+                const form = document.getElementById('contact-form');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        saveContact();
+                    });
+                } else {
+                    console.error("Formular 'contact-form' nicht gefunden!");
+                }
+                
+                // Event-Listener für den Abbrechen-Button
+                const cancelButton = document.getElementById('cancel-contact-form');
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function() {
+                        closeContactForm();
+                    });
+                } else {
+                    console.error("Button 'cancel-contact-form' nicht gefunden!");
+                }
+                
+                // Event-Listener für den Löschen-Button, falls vorhanden
+                if (contact) {
+                    const deleteButton = document.getElementById('delete-contact');
+                    if (deleteButton) {
+                        deleteButton.addEventListener('click', function() {
+                            if (confirm('Diesen Kontakt wirklich löschen?')) {
+                                deleteContact(contact.id);
+                                closeContactForm();
+                            }
+                        });
+                    } else {
+                        console.error("Button 'delete-contact' nicht gefunden!");
+                    }
+                }
+            }, 0);
+        }
+        
+        // Kontaktformular schließen
+        function closeContactForm() {
+            const modalOverlay = document.querySelector('.modal-overlay');
+            if (modalOverlay) {
+                modalOverlay.remove();
+            }
+        }
+        
+        // Kontakt speichern (neu oder bearbeitet)
+        function saveContact() {
+            const contactId = document.getElementById('contact-id').value;
+            const isNewContact = !contactId;
+            
+            // Farbzuordnung nach Kategorie
+            const categoryColors = {
+                'Familie': '#4285F4', // primary-color
+                'Freunde': '#9C27B0', // purple-color
+                'Schule': '#FF4081', // pink-color
+                'Ärzte': '#4CAF50', // green-color
+                'Notfälle': '#CC0000' // red-color
+            };
+            
+            // Standardaktionen je nach Kategorie
+            const categoryActions = {
+                'Familie': ['Anrufen', 'Nachricht'],
+                'Freunde': ['Anrufen', 'Nachricht'],
+                'Schule': ['E-Mail', 'Termin'],
+                'Ärzte': ['Anrufen', 'Termin'],
+                'Notfälle': ['Notruf wählen']
+            };
+            
+            const name = document.getElementById('contact-name').value;
+            const category = document.getElementById('contact-category').value;
+            const initials = document.getElementById('contact-initials').value;
+            const address = document.getElementById('contact-address').value;
+            const phone = document.getElementById('contact-phone').value;
+            const mobile = document.getElementById('contact-mobile').value;
+            const email = document.getElementById('contact-email').value;
+            const schedule = document.getElementById('contact-schedule').value;
+            const notes = document.getElementById('contact-notes').value;
+            
+            // Kontakt-Objekt erstellen
+            const contact = {
+                id: isNewContact ? 'contact_' + Date.now() : contactId,
+                name,
+                category,
+                color: categoryColors[category] || 'var(--primary-color)',
+                initials,
+                address,
+                phone,
+                mobile,
+                email,
+                schedule,
+                notes,
+                actions: categoryActions[category] || ['Anrufen']
+            };
+            
+            // Spezialbehandlung für Notfälle
+            if (category === 'Notfälle') {
+                contact.items = [
+                    { label: 'Notruf', value: phone || '112' },
+                    { label: 'Polizei', value: '110' },
+                    { label: 'Giftnotruf', value: '06131 / 19240' },
+                    { label: 'Notfallpraxis', value: mobile || '06102 / 123456' }
+                ];
+            }
+            
+            // Kontakte laden, den betreffenden aktualisieren oder neu hinzufügen, dann speichern
+            const contacts = getContacts();
+            
+            if (isNewContact) {
+                contacts.push(contact);
+            } else {
+                const index = contacts.findIndex(c => c.id === contactId);
+                if (index !== -1) {
+                    contacts[index] = contact;
+                }
+            }
+            
+            saveContacts(contacts);
+            
+            // Formular schließen und Ansicht aktualisieren
+            closeContactForm();
+            
+            // Aktuell ausgewählte Kategorie beibehalten
+            const activeFilterButton = document.querySelector('#contacts-view .filter-button.active');
+            const category_filter = activeFilterButton ? activeFilterButton.getAttribute('data-category') : 'Alle';
+            renderContacts(category_filter);
+        }
+        
+        // Kontakt bearbeiten
+        function editContact(contactId) {
+            showContactForm(contactId);
+        }
+        
+        // Kontakt löschen
+        function deleteContact(contactId) {
+            const contacts = getContacts();
+            const filteredContacts = contacts.filter(contact => contact.id !== contactId);
+            saveContacts(filteredContacts);
+            
+            // Aktuell ausgewählte Kategorie beibehalten
+            const activeFilterButton = document.querySelector('#contacts-view .filter-button.active');
+            const category = activeFilterButton ? activeFilterButton.getAttribute('data-category') : 'Alle';
+            renderContacts(category);
+        }
+        
+        // Kontakte aus dem localStorage laden
+        function getContacts() {
+            const contactsJSON = localStorage.getItem('contacts');
+            const contacts = contactsJSON ? JSON.parse(contactsJSON) : defaultContacts;
+            // Debug-Ausgabe für Fehlersuche
+            console.log("getContacts liefert", contacts.length, "Kontakte");
+            return contacts;
+        }
+        
+        // Kontakte im localStorage speichern
+        function saveContacts(contacts) {
+            localStorage.setItem('contacts', JSON.stringify(contacts));
+        }
+        
+        // REZEPTBUCH-FUNKTIONALITÄT
+        
+        // Standardrezepte, falls keine im localStorage existieren
+        const defaultRecipes = [
+            {
+                id: "recipe_1",
+                title: "Nudelauflauf mit Gemüse",
+                category: "Hauptgericht",
+                cookTime: "45 Min",
+                description: "Cremiger Nudelauflauf mit saisonalem Gemüse und Käse überbacken.",
+                rating: 4,
+                portions: "4 Portionen",
+                tags: ["Familienfreundlich", "Vegetarisch"],
+                ingredients: [
+                    "500g Nudeln",
+                    "300g gemischtes Gemüse (Zucchini, Paprika, Brokkoli)",
+                    "200g Käse zum Überbacken",
+                    "500ml Sahnesauce",
+                    "Salz, Pfeffer, Gewürze nach Geschmack"
+                ],
+                instructions: "1. Nudeln nach Packungsanweisung kochen.\n2. Gemüse klein schneiden und kurz anbraten.\n3. Nudeln und Gemüse in Auflaufform geben und mit Sauce vermischen.\n4. Mit Käse bestreuen und bei 180°C ca. 20 Minuten überbacken.",
+                colorClass: "color-1"
+            },
+            {
+                id: "recipe_2",
+                title: "Selbstgemachte Pizza",
+                category: "Hauptgericht",
+                cookTime: "90 Min",
+                description: "Knuspriger Pizzateig mit beliebigen Toppings nach Wahl.",
+                rating: 5,
+                portions: "2-4 Portionen",
+                tags: ["Beliebt", "Familienfreundlich"],
+                ingredients: [
+                    "500g Mehl",
+                    "1 Päckchen Trockenhefe",
+                    "300ml lauwarmes Wasser",
+                    "2 EL Olivenöl",
+                    "1 TL Salz",
+                    "Tomatensoße",
+                    "Belag nach Wahl",
+                    "200g geriebener Käse"
+                ],
+                instructions: "1. Mehl, Hefe, Salz in einer Schüssel mischen.\n2. Wasser und Öl zugeben und zu einem glatten Teig kneten.\n3. Teig 60 Min. gehen lassen.\n4. Teig ausrollen, mit Sauce bestreichen und belegen.\n5. Bei 250°C ca. 15 Min. backen.",
+                colorClass: "color-2"
+            },
+            {
+                id: "recipe_3",
+                title: "Schnelle Tomatensuppe",
+                category: "Hauptgericht",
+                cookTime: "30 Min",
+                description: "Cremige Tomatensuppe mit frischen Kräutern und Croutons.",
+                rating: 5,
+                portions: "4 Portionen",
+                tags: ["Schnell", "Vegetarisch"],
+                ingredients: [
+                    "1kg reife Tomaten",
+                    "2 Zwiebeln",
+                    "2 Knoblauchzehen",
+                    "500ml Gemüsebrühe",
+                    "100ml Sahne",
+                    "Frische Kräuter (Basilikum, Thymian)",
+                    "Salz, Pfeffer, Zucker"
+                ],
+                instructions: "1. Zwiebeln und Knoblauch anbraten.\n2. Tomaten hinzufügen und kurz mitbraten.\n3. Mit Brühe ablöschen und 15 Min. köcheln lassen.\n4. Suppe pürieren, Sahne unterrühren.\n5. Mit Kräutern, Salz, Pfeffer und einer Prise Zucker abschmecken.",
+                colorClass: "color-3"
+            }
+        ];
+        
+        // Rezeptbuch aus dem localStorage laden oder die Standards verwenden
+        function initRecipeBook() {
+            if (!localStorage.getItem('recipes')) {
+                localStorage.setItem('recipes', JSON.stringify(defaultRecipes));
+            }
+            
+            renderRecipes('Alle');
+        }
+        
+        // Alle Rezepte rendern, optional nach Kategorie gefiltert
+        function renderRecipes(category) {
+            const container = document.getElementById('recipe-grid');
+            if (!container) return;
+            
+            // Rezepte laden
+            let recipes = getRecipes();
+            
+            // Nach Kategorie filtern, wenn nicht "Alle"
+            if (category && category !== 'Alle') {
+                recipes = recipes.filter(recipe => {
+                    // Prüfe sowohl die Hauptkategorie als auch Tags
+                    return recipe.category === category || 
+                           (recipe.tags && recipe.tags.some(tag => tag === category ||
+                                                                  (category === 'Schnell' && tag === 'Schnell')));
+                });
+            }
+            
+            // Container leeren
+            container.innerHTML = '';
+            
+            // Alle Rezepte rendern
+            recipes.forEach(recipe => {
+                const recipeElement = createRecipeElement(recipe);
+                container.appendChild(recipeElement);
+            });
+        }
+        
+        // Ein einzelnes Rezept-Element erstellen
+        function createRecipeElement(recipe) {
+            const recipeElement = document.createElement('div');
+            recipeElement.className = `recipe-item ${recipe.colorClass || getRandomColorClass()}`;
+            recipeElement.setAttribute('data-recipe-id', recipe.id);
+            
+            // Aktionen (Bearbeiten & Löschen)
+            const actionsHTML = `
+                <div class="recipe-actions">
+                    <button class="recipe-action-btn edit-recipe" data-recipe-id="${recipe.id}" title="Bearbeiten">
+                        ✏️
+                    </button>
+                    <button class="recipe-action-btn delete-recipe" data-recipe-id="${recipe.id}" title="Löschen">
+                        🗑️
+                    </button>
+                </div>
+            `;
+            
+            // Kategorie-Tag und Zubereitungszeit
+            const tagHTML = `<div class="recipe-tag">${recipe.category}</div>`;
+            const timeHTML = `<div class="recipe-time">${recipe.cookTime}</div>`;
+            
+            // Sterne-Bewertung erstellen
+            let starsHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                starsHTML += i <= recipe.rating ? '★' : '☆';
+            }
+            
+            // Inhalt
+            const contentHTML = `
+                <div class="recipe-content">
+                    <div class="recipe-title">${recipe.title}</div>
+                    <div class="recipe-description">${recipe.description}</div>
+                    <div class="star-rating">${starsHTML}</div>
+                    <div class="recipe-meta">
+                        <div>${recipe.portions}</div>
+                        <div>${recipe.tags ? recipe.tags[0] : ''}</div>
+                    </div>
+                </div>
+            `;
+            
+            recipeElement.innerHTML = actionsHTML + tagHTML + timeHTML + contentHTML;
+            
+            // Event-Listener für Aktions-Buttons hinzufügen
+            setTimeout(() => {
+                const editBtn = recipeElement.querySelector('.edit-recipe');
+                if (editBtn) {
+                    editBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const recipeId = this.getAttribute('data-recipe-id');
+                        editRecipe(recipeId);
+                    });
+                }
+                
+                const deleteBtn = recipeElement.querySelector('.delete-recipe');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const recipeId = this.getAttribute('data-recipe-id');
+                        if (confirm('Dieses Rezept wirklich löschen?')) {
+                            deleteRecipe(recipeId);
+                        }
+                    });
+                }
+                
+                // Beim Klick auf das Rezept selbst werden die Details angezeigt
+                recipeElement.addEventListener('click', function(e) {
+                    // Nicht auslösen, wenn auf einen Button geklickt wurde
+                    if (!e.target.closest('.recipe-action-btn')) {
+                        const recipeId = this.getAttribute('data-recipe-id');
+                        showRecipeDetails(recipeId);
+                    }
+                });
+            }, 0);
+            
+            return recipeElement;
+        }
+        
+        // Zufällige Farbklasse für Rezepte zurückgeben
+        function getRandomColorClass() {
+            const colorClasses = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6'];
+            return colorClasses[Math.floor(Math.random() * colorClasses.length)];
+        }
+        
+        // Formular zum Hinzufügen oder Bearbeiten eines Rezepts anzeigen
+        function showRecipeForm(recipeId = null) {
+            // Bestehenden Rezept laden, falls ID angegeben
+            let recipe = null;
+            if (recipeId) {
+                const recipes = getRecipes();
+                recipe = recipes.find(r => r.id === recipeId);
+                if (!recipe) {
+                    console.error("Rezept mit ID", recipeId, "nicht gefunden!");
+                    return;
+                }
+            }
+            
+            // Prüfen, ob bereits ein Modal-Overlay existiert und entfernen
+            const existingOverlay = document.querySelector('.modal-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            
+            // Rezept-Tags als kommaseparierte Liste umwandeln
+            let tagsValue = '';
+            if (recipe && recipe.tags) {
+                tagsValue = recipe.tags.join(', ');
+            }
+            
+            // Zutaten als Liste umwandeln
+            let ingredientsValue = '';
+            if (recipe && recipe.ingredients) {
+                ingredientsValue = recipe.ingredients.join('\n');
+            }
+            
+            // Formular erstellen
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>${recipe ? 'Rezept bearbeiten' : 'Neues Rezept hinzufügen'}</h2>
+                </div>
+                <form id="recipe-form">
+                    <input type="hidden" id="recipe-id" value="${recipe ? recipe.id : ''}">
+                    <input type="hidden" id="recipe-color-class" value="${recipe ? recipe.colorClass : ''}">
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-title">Titel:</label>
+                        <input type="text" id="recipe-title" required value="${recipe ? recipe.title : ''}">
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-category">Kategorie:</label>
+                        <select id="recipe-category" required>
+                            <option value="Hauptgericht" ${recipe && recipe.category === 'Hauptgericht' ? 'selected' : ''}>Hauptgericht</option>
+                            <option value="Dessert" ${recipe && recipe.category === 'Dessert' ? 'selected' : ''}>Dessert</option>
+                            <option value="Snack" ${recipe && recipe.category === 'Snack' ? 'selected' : ''}>Snack</option>
+                            <option value="Frühstück" ${recipe && recipe.category === 'Frühstück' ? 'selected' : ''}>Frühstück</option>
+                            <option value="Beilage" ${recipe && recipe.category === 'Beilage' ? 'selected' : ''}>Beilage</option>
+                        </select>
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-cook-time">Zubereitungszeit:</label>
+                        <input type="text" id="recipe-cook-time" placeholder="z.B. 30 Min" required value="${recipe ? recipe.cookTime : ''}">
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-description">Beschreibung:</label>
+                        <textarea id="recipe-description" placeholder="Kurze Beschreibung des Rezepts">${recipe ? recipe.description : ''}</textarea>
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-portions">Portionen:</label>
+                        <input type="text" id="recipe-portions" placeholder="z.B. 4 Portionen" value="${recipe ? recipe.portions : ''}">
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-tags">Tags (durch Komma getrennt):</label>
+                        <input type="text" id="recipe-tags" placeholder="z.B. Vegetarisch, Schnell, Familienfreundlich" value="${tagsValue}">
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label>Bewertung:</label>
+                        <div class="star-rating-input">
+                            <input type="radio" id="star5" name="rating" value="5" ${recipe && recipe.rating === 5 ? 'checked' : ''}>
+                            <label for="star5">★</label>
+                            <input type="radio" id="star4" name="rating" value="4" ${recipe && recipe.rating === 4 ? 'checked' : ''}>
+                            <label for="star4">★</label>
+                            <input type="radio" id="star3" name="rating" value="3" ${recipe && recipe.rating === 3 ? 'checked' : ''}>
+                            <label for="star3">★</label>
+                            <input type="radio" id="star2" name="rating" value="2" ${recipe && recipe.rating === 2 ? 'checked' : ''}>
+                            <label for="star2">★</label>
+                            <input type="radio" id="star1" name="rating" value="1" ${recipe && recipe.rating === 1 ? 'checked' : ''}>
+                            <label for="star1">★</label>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-ingredients">Zutaten (eine pro Zeile):</label>
+                        <textarea id="recipe-ingredients" placeholder="500g Mehl&#10;2 Eier&#10;...">${ingredientsValue}</textarea>
+                    </div>
+                    
+                    <div class="recipe-form-field">
+                        <label for="recipe-instructions">Zubereitung:</label>
+                        <textarea id="recipe-instructions" placeholder="Beschreibe die Zubereitung Schritt für Schritt...">${recipe ? recipe.instructions : ''}</textarea>
+                    </div>
+                    
+                    <div class="recipe-form-buttons">
+                        <button type="button" id="cancel-recipe-form" class="button" style="background-color: #777;">Abbrechen</button>
+                        ${recipe ? `<button type="button" id="delete-recipe" class="button" style="background-color: #f44336;">Löschen</button>` : ''}
+                        <button type="submit" class="button" style="background-color: var(--primary-color);">Speichern</button>
+                    </div>
+                </form>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener für das Formular
+            setTimeout(() => {
+                const form = document.getElementById('recipe-form');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        saveRecipe();
+                    });
+                }
+                
+                // Event-Listener für den Abbrechen-Button
+                const cancelButton = document.getElementById('cancel-recipe-form');
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function() {
+                        closeRecipeForm();
+                    });
+                }
+                
+                // Event-Listener für den Löschen-Button, falls vorhanden
+                if (recipe) {
+                    const deleteButton = document.getElementById('delete-recipe');
+                    if (deleteButton) {
+                        deleteButton.addEventListener('click', function() {
+                            if (confirm('Dieses Rezept wirklich löschen?')) {
+                                deleteRecipe(recipe.id);
+                                closeRecipeForm();
+                            }
+                        });
+                    }
+                }
+                
+                // Standard-Bewertung setzen, falls keine ausgewählt
+                if (!recipe || !recipe.rating) {
+                    document.getElementById('star5').checked = true;
+                }
+            }, 0);
+        }
+        
+        // Rezeptformular schließen
+        function closeRecipeForm() {
+            const modalOverlay = document.querySelector('.modal-overlay');
+            if (modalOverlay) {
+                modalOverlay.remove();
+            }
+        }
+        
+        // Rezept speichern (neu oder bearbeitet)
+        function saveRecipe() {
+            const recipeId = document.getElementById('recipe-id').value;
+            const isNewRecipe = !recipeId;
+            const colorClass = document.getElementById('recipe-color-class').value || getRandomColorClass();
+            
+            // Daten aus dem Formular auslesen
+            const title = document.getElementById('recipe-title').value;
+            const category = document.getElementById('recipe-category').value;
+            const cookTime = document.getElementById('recipe-cook-time').value;
+            const description = document.getElementById('recipe-description').value;
+            const portions = document.getElementById('recipe-portions').value;
+            
+            // Tags als Array umwandeln
+            const tagsInput = document.getElementById('recipe-tags').value;
+            const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()) : [];
+            
+            // Bewertung auslesen
+            const ratingInputs = document.querySelectorAll('input[name="rating"]');
+            let rating = 5; // Standard ist 5 Sterne
+            for (const input of ratingInputs) {
+                if (input.checked) {
+                    rating = parseInt(input.value);
+                    break;
+                }
+            }
+            
+            // Zutaten als Array umwandeln
+            const ingredientsInput = document.getElementById('recipe-ingredients').value;
+            const ingredients = ingredientsInput ? ingredientsInput.split('\n').map(ingredient => ingredient.trim()).filter(ingredient => ingredient) : [];
+            
+            const instructions = document.getElementById('recipe-instructions').value;
+            
+            // Rezept-Objekt erstellen
+            const recipe = {
+                id: isNewRecipe ? 'recipe_' + Date.now() : recipeId,
+                title,
+                category,
+                cookTime,
+                description,
+                rating,
+                portions,
+                tags,
+                ingredients,
+                instructions,
+                colorClass
+            };
+            
+            // Rezepte laden, das betreffende aktualisieren oder neu hinzufügen, dann speichern
+            const recipes = getRecipes();
+            
+            if (isNewRecipe) {
+                recipes.push(recipe);
+            } else {
+                const index = recipes.findIndex(r => r.id === recipeId);
+                if (index !== -1) {
+                    recipes[index] = recipe;
+                }
+            }
+            
+            saveRecipes(recipes);
+            
+            // Formular schließen und Ansicht aktualisieren
+            closeRecipeForm();
+            
+            // Aktuell ausgewählte Kategorie beibehalten
+            const activeFilterButton = document.querySelector('#recipe-book-view .filter-button.active');
+            const categoryFilter = activeFilterButton ? activeFilterButton.getAttribute('data-category') : 'Alle';
+            renderRecipes(categoryFilter);
+        }
+        
+        // Rezept bearbeiten
+        function editRecipe(recipeId) {
+            showRecipeForm(recipeId);
+        }
+        
+        // Rezept löschen
+        function deleteRecipe(recipeId) {
+            const recipes = getRecipes();
+            const filteredRecipes = recipes.filter(recipe => recipe.id !== recipeId);
+            saveRecipes(filteredRecipes);
+            
+            // Aktuell ausgewählte Kategorie beibehalten
+            const activeFilterButton = document.querySelector('#recipe-book-view .filter-button.active');
+            const category = activeFilterButton ? activeFilterButton.getAttribute('data-category') : 'Alle';
+            renderRecipes(category);
+        }
+        
+        // Rezeptdetails anzeigen
+        function showRecipeDetails(recipeId) {
+            const recipes = getRecipes();
+            const recipe = recipes.find(r => r.id === recipeId);
+            
+            if (!recipe) return;
+            
+            // Prüfen, ob bereits ein Modal-Overlay existiert und entfernen
+            const existingOverlay = document.querySelector('.modal-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            
+            // Sterne-Bewertung erstellen
+            let starsHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                starsHTML += i <= recipe.rating ? '★' : '☆';
+            }
+            
+            // Zutaten als Liste formatieren
+            let ingredientsHTML = '';
+            if (recipe.ingredients && recipe.ingredients.length > 0) {
+                ingredientsHTML = '<ul style="padding-left: 20px;">' + 
+                    recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('') + 
+                    '</ul>';
+            }
+            
+            // Anleitung formatieren (Zeilenumbrüche respektieren)
+            const instructionsHTML = recipe.instructions ? recipe.instructions.replace(/\n/g, '<br>') : '';
+            
+            // Modal-Inhalt erstellen
+            modalContent.innerHTML = `
+                <div style="position: relative;">
+                    <div style="position: absolute; top: 0; right: 0;">
+                        <button id="close-recipe-details" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+                    </div>
+                    
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2 style="color: var(--primary-color); margin-bottom: 5px;">${recipe.title}</h2>
+                        <div style="color: #AAA;">${recipe.category} • ${recipe.cookTime} • ${recipe.portions}</div>
+                        <div class="star-rating" style="font-size: 24px; margin: 10px 0;">${starsHTML}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <p>${recipe.description}</p>
+                    </div>
+                    
+                    <div style="background-color: var(--bg-card); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: var(--primary-color); margin-top: 0;">Zutaten</h3>
+                        ${ingredientsHTML}
+                    </div>
+                    
+                    <div style="background-color: var(--bg-card); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: var(--primary-color); margin-top: 0;">Zubereitung</h3>
+                        <p>${instructionsHTML}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button id="add-to-meal-plan" class="button" style="background-color: var(--green-color); margin-right: 10px;">Zum Essensplan hinzufügen</button>
+                        <button id="edit-recipe-details" class="button" style="background-color: var(--blue-color); margin-right: 10px;">Bearbeiten</button>
+                        <button id="close-recipe-details-btn" class="button" style="background-color: #777;">Schließen</button>
+                    </div>
+                </div>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener für Schließen-Buttons
+            setTimeout(() => {
+                const closeButtons = [
+                    document.getElementById('close-recipe-details'),
+                    document.getElementById('close-recipe-details-btn')
+                ];
+                
+                closeButtons.forEach(button => {
+                    if (button) {
+                        button.addEventListener('click', function() {
+                            modalOverlay.remove();
+                        });
+                    }
+                });
+                
+                // Event-Listener für Bearbeiten-Button
+                const editButton = document.getElementById('edit-recipe-details');
+                if (editButton) {
+                    editButton.addEventListener('click', function() {
+                        modalOverlay.remove();
+                        editRecipe(recipeId);
+                    });
+                }
+                
+                // Event-Listener für "Zum Essensplan hinzufügen"-Button
+                const addToMealPlanButton = document.getElementById('add-to-meal-plan');
+                if (addToMealPlanButton) {
+                    addToMealPlanButton.addEventListener('click', function() {
+                        modalOverlay.remove();
+                        showMealPlanSelectionForRecipe(recipe);
+                    });
+                }
+            }, 0);
+        }
+        
+        // Essensplan-Auswahl für ein bestimmtes Rezept anzeigen
+        function showMealPlanSelectionForRecipe(recipe) {
+            // Prüfen, ob bereits ein Modal-Overlay existiert und entfernen
+            const existingOverlay = document.querySelector('.modal-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Modal-Overlay erstellen
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'modal-overlay';
+            
+            // Modal-Content erstellen
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.maxWidth = '800px';
+            
+            modalContent.innerHTML = `
+                <div class="modal-header">
+                    <h2>"${recipe.title}" zum Essensplan hinzufügen</h2>
+                    <p>Wähle Tag und Mahlzeit aus</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0;">
+                    ${Object.keys(dayNames).map(dayKey => `
+                        <div style="background-color: var(--bg-card); border-radius: 8px; padding: 15px;">
+                            <h4 style="color: var(--primary-color); margin-top: 0;">${dayNames[dayKey]}</h4>
+                            ${Object.keys(mealTypes).map(mealKey => `
+                                <button class="recipe-meal-assignment-btn button" data-day="${dayKey}" data-meal="${mealKey}" style="width: 100%; margin: 5px 0; font-size: 0.9em;">
+                                    ${mealTypes[mealKey]}
+                                </button>
+                            `).join('')}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="cancel-recipe-meal-assignment" class="button" style="background-color: #777;">Abbrechen</button>
+                </div>
+            `;
+            
+            // Modal zum DOM hinzufügen
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Event-Listener
+            setTimeout(() => {
+                // Mahlzeit-Zuweisung
+                document.querySelectorAll('.recipe-meal-assignment-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const dayKey = this.getAttribute('data-day');
+                        const mealKey = this.getAttribute('data-meal');
+                        
+                        // Mahlzeit mit Rezept setzen
+                        const mealPlan = getMealPlan();
+                        mealPlan[dayKey][mealKey] = recipe.title;
+                        saveMealPlan(mealPlan);
+                        
+                        modalOverlay.remove();
+                        
+                        // Erfolgs-Nachricht
+                        alert(`"${recipe.title}" wurde zu ${dayNames[dayKey]} ${mealTypes[mealKey]} hinzugefügt!`);
+                        
+                        // Dashboard aktualisieren, falls wir heute sind
+                        updateDashboardMeals();
+                    });
+                });
+                
+                // Abbrechen Button
+                document.getElementById('cancel-recipe-meal-assignment').addEventListener('click', function() {
+                    modalOverlay.remove();
+                });
+            }, 0);
+        }
+        
+        // Rezepte aus dem localStorage laden
+        function getRecipes() {
+            const recipesJSON = localStorage.getItem('recipes');
+            return recipesJSON ? JSON.parse(recipesJSON) : defaultRecipes;
+        }
+        
+        // Rezepte im localStorage speichern
+        function saveRecipes(recipes) {
+            localStorage.setItem('recipes', JSON.stringify(recipes));
+        }
+        
+        // Die setupTabs-Funktion sofort ausführen, um die Tab-Funktionalität zu initialisieren
+        setupTabs();
+    </script>
 </body>
 </html>
+                
