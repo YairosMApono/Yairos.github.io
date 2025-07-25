@@ -594,7 +594,12 @@ class FamilienHub {
                 );
                 
                 const mealClass = meal ? 'meal-slot has-meal' : 'meal-slot';
-                const mealContent = meal ? meal.meal : 'Klicken zum Hinzufügen';
+                let mealContent = meal ? `<span>${meal.meal}</span>` : 'Klicken zum Hinzufügen';
+                // Edit/Delete Buttons
+                if (meal) {
+                    mealContent += ` <button class='btn btn--sm btn--outline meal-edit-btn' data-meal-id='${meal.id}' title='Bearbeiten'><i class='fas fa-edit'></i></button>`;
+                    mealContent += ` <button class='btn btn--sm btn--danger meal-delete-btn' data-meal-id='${meal.id}' title='Löschen'><i class='fas fa-trash'></i></button>`;
+                }
                 // data-Attribute für Drag & Drop
                 html += `<div class="${mealClass}" data-date="${dateStr}" data-meal-type="${mealType === 'Frühstück' ? 'breakfast' : mealType === 'Mittagessen' ? 'lunch' : 'dinner'}" draggable="${meal ? 'true' : 'false'}">${mealContent}</div>`;
             }
@@ -618,6 +623,8 @@ class FamilienHub {
                                    onchange="app.toggleShoppingItem(${list.id}, ${item.id})">
                             <span class="${item.completed ? 'completed' : ''}">${item.name}</span>
                             <div class="quantity">${item.quantity}</div>
+                            <button class='btn btn--sm btn--outline shopping-edit-btn' data-item-id='${item.id}' data-list-id='${list.id}' title='Bearbeiten'><i class='fas fa-edit'></i></button>
+                            <button class='btn btn--sm btn--danger shopping-delete-btn' data-item-id='${item.id}' data-list-id='${list.id}' title='Löschen'><i class='fas fa-trash'></i></button>
                         </div>
                     `).join('')}
                 </div>
@@ -869,10 +876,19 @@ class FamilienHub {
                 <div class="recipe-title">${recipe.name}</div>
                 <div class="recipe-desc">${recipe.description}</div>
                 <button class="btn btn--secondary add-to-mealplan-btn" data-recipe-id="${recipe.id}">Zum Essensplan hinzufügen</button>
+                <button class='btn btn--sm btn--outline recipe-edit-btn' data-recipe-id='${recipe.id}' title='Bearbeiten'><i class='fas fa-edit'></i></button>
+                <button class='btn btn--sm btn--danger recipe-delete-btn' data-recipe-id='${recipe.id}' title='Löschen'><i class='fas fa-trash'></i></button>
             </div>`;
         });
         html += '</div>';
         recipesModule.insertAdjacentHTML('beforeend', html);
+        // Button für neues Rezept
+        const addRecipeBtn = recipesModule.querySelector('.btn.btn--primary');
+        if (addRecipeBtn) {
+            addRecipeBtn.addEventListener('click', () => {
+                this.openRecipeModal('new');
+            });
+        }
     }
 
     openAddMealModal(recipeId) {
@@ -1104,6 +1120,25 @@ class FamilienHub {
         }
         this.closeModal('recipeModal');
         this.renderRecipes();
+    }
+    deleteMeal(mealId) {
+        this.data.meals = this.data.meals.filter(m => m.id != mealId);
+        this.renderMeals();
+        this.renderDashboard();
+        this.showToast('Mahlzeit gelöscht!', 'success');
+    }
+    deleteShoppingItem(itemId, listId) {
+        const list = this.data.shopping.find(l => l.id == listId);
+        if (!list) return;
+        list.items = list.items.filter(i => i.id != itemId);
+        this.renderShopping();
+        this.renderDashboard();
+        this.showToast('Artikel gelöscht!', 'success');
+    }
+    deleteRecipe(recipeId) {
+        this.data.recipes = this.data.recipes.filter(r => r.id != recipeId);
+        this.renderRecipes();
+        this.showToast('Rezept gelöscht!', 'success');
     }
 }
 
