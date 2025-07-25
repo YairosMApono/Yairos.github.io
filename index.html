@@ -451,6 +451,117 @@
         </div>
     </div>
 
+    <!-- Modal: Mahlzeit hinzufügen/bearbeiten -->
+    <div class="modal" id="mealModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Mahlzeit hinzufügen</h3>
+                <button class="modal-close" id="closeMealModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="mealForm">
+                    <div class="form-group">
+                        <label class="form-label">Datum</label>
+                        <input type="date" class="form-control" id="mealDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mahlzeit</label>
+                        <select class="form-control" id="mealType" required>
+                            <option value="breakfast">Frühstück</option>
+                            <option value="lunch">Mittagessen</option>
+                            <option value="dinner">Abendessen</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" id="mealName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rezept (optional)</label>
+                        <input type="text" class="form-control" id="mealRecipe">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--secondary" id="cancelMealBtn">Abbrechen</button>
+                <button class="btn btn--danger" id="deleteMealBtn" style="display:none">Löschen</button>
+                <button class="btn btn--primary" id="saveMealBtn">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Shopping-Item hinzufügen/bearbeiten -->
+    <div class="modal" id="shoppingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Artikel hinzufügen</h3>
+                <button class="modal-close" id="closeShoppingModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="shoppingForm">
+                    <div class="form-group">
+                        <label class="form-label">Geschäft</label>
+                        <input type="text" class="form-control" id="shoppingStore" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" id="shoppingName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Menge</label>
+                        <input type="text" class="form-control" id="shoppingQuantity" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--secondary" id="cancelShoppingBtn">Abbrechen</button>
+                <button class="btn btn--danger" id="deleteShoppingBtn" style="display:none">Löschen</button>
+                <button class="btn btn--primary" id="saveShoppingBtn">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Rezept hinzufügen/bearbeiten -->
+    <div class="modal" id="recipeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Rezept hinzufügen</h3>
+                <button class="modal-close" id="closeRecipeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="recipeForm">
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" id="recipeName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Beschreibung</label>
+                        <input type="text" class="form-control" id="recipeDescription">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Zutaten (Komma getrennt)</label>
+                        <input type="text" class="form-control" id="recipeIngredients">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Anleitung</label>
+                        <textarea class="form-control" id="recipeInstructions" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--secondary" id="cancelRecipeBtn">Abbrechen</button>
+                <button class="btn btn--danger" id="deleteRecipeBtn" style="display:none">Löschen</button>
+                <button class="btn btn--primary" id="saveRecipeBtn">Speichern</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div class="toast-container" id="toastContainer">
         <!-- Toasts will be generated by JavaScript -->

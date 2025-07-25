@@ -308,63 +308,47 @@ class FamilienHub {
         const addMealBtn = document.getElementById('addMealBtn');
         if (addMealBtn) {
             addMealBtn.addEventListener('click', () => {
-                // Einfaches Prompt für Demo, später Modal
-                const date = prompt('Für welches Datum (YYYY-MM-DD) soll die Mahlzeit hinzugefügt werden?');
-                if (!date) return;
-                const mealType = prompt('Für welche Mahlzeit? (breakfast, lunch, dinner)');
-                if (!['breakfast','lunch','dinner'].includes(mealType)) return;
-                const meal = prompt('Name der Mahlzeit?');
-                if (!meal) return;
-                this.data.meals.push({
-                    id: this.generateId(),
-                    date,
-                    type: mealType,
-                    meal,
-                    recipe: ''
-                });
-                this.renderMeals();
-                this.renderDashboard();
-                this.showToast('Mahlzeit hinzugefügt!','success');
+                this.openMealModal('new');
             });
         }
-
-        // --- NEU: Shopping-Item hinzufügen Button ---
+        // Modal-Handler für Mahlzeiten
+        document.getElementById('closeMealModal').addEventListener('click', () => {
+            this.closeModal('mealModal');
+        });
+        document.getElementById('cancelMealBtn').addEventListener('click', () => {
+            this.closeModal('mealModal');
+        });
+        document.getElementById('saveMealBtn').addEventListener('click', () => {
+            this.saveMeal();
+        });
+        // Shopping-Item hinzufügen
         const addShoppingItemBtn = document.getElementById('addShoppingItemBtn');
         if (addShoppingItemBtn) {
             addShoppingItemBtn.addEventListener('click', () => {
-                const store = prompt('Für welches Geschäft? (z.B. Supermarkt)');
-                if (!store) return;
-                const name = prompt('Name des Artikels?');
-                if (!name) return;
-                const quantity = prompt('Menge? (z.B. 1 Stück, 500g)');
-                if (!quantity) return;
-                // Finde oder erstelle Liste
-                let list = this.data.shopping.find(l => l.store === store);
-                if (!list) {
-                    list = { id: this.generateId(), store, items: [] };
-                    this.data.shopping.push(list);
-                }
-                list.items.push({
-                    id: this.generateId(),
-                    name,
-                    quantity,
-                    completed: false
-                });
-                this.renderShopping();
-                this.renderDashboard();
-                this.showToast('Artikel hinzugefügt!','success');
+                this.openShoppingModal('new');
             });
         }
-
-        // --- NEU: Delegation für .add-to-mealplan-btn ---
-        document.addEventListener('click', (e) => {
-            const btn = e.target.closest('.add-to-mealplan-btn');
-            if (btn) {
-                const recipeId = parseInt(btn.dataset.recipeId);
-                if (!recipeId) return;
-                this.openAddMealModal(recipeId);
-            }
+        document.getElementById('closeShoppingModal').addEventListener('click', () => {
+            this.closeModal('shoppingModal');
         });
+        document.getElementById('cancelShoppingBtn').addEventListener('click', () => {
+            this.closeModal('shoppingModal');
+        });
+        document.getElementById('saveShoppingBtn').addEventListener('click', () => {
+            this.saveShoppingItem();
+        });
+        // Rezept hinzufügen
+        // (Button muss noch im Rezept-Modul ergänzt werden)
+        document.getElementById('closeRecipeModal').addEventListener('click', () => {
+            this.closeModal('recipeModal');
+        });
+        document.getElementById('cancelRecipeBtn').addEventListener('click', () => {
+            this.closeModal('recipeModal');
+        });
+        document.getElementById('saveRecipeBtn').addEventListener('click', () => {
+            this.saveRecipe();
+        });
+        // Delegation für .add-to-mealplan-btn bleibt wie gehabt
     }
 
     switchModule(module) {
@@ -909,6 +893,217 @@ class FamilienHub {
         this.renderMeals();
         this.renderDashboard();
         this.showToast('Rezept zum Essensplan hinzugefügt!','success');
+    }
+
+    // --- Methoden für die neuen Modals ---
+    openMealModal(mode, mealId = null) {
+        const modal = document.getElementById('mealModal');
+        const form = document.getElementById('mealForm');
+        const dateEl = document.getElementById('mealDate');
+        const typeEl = document.getElementById('mealType');
+        const nameEl = document.getElementById('mealName');
+        const recipeEl = document.getElementById('mealRecipe');
+        const saveBtn = document.getElementById('saveMealBtn');
+        const delBtn = document.getElementById('deleteMealBtn');
+        const modalTitle = modal.querySelector('.modal-header h3');
+        form.reset();
+        if (mode === 'new') {
+            modalTitle.textContent = 'Mahlzeit hinzufügen';
+            saveBtn.textContent = 'Speichern';
+            saveBtn.style.display = '';
+            delBtn.style.display = 'none';
+            form.removeAttribute('data-meal-id');
+        } else {
+            const meal = this.data.meals.find(m => m.id == mealId);
+            if (!meal) return;
+            dateEl.value = meal.date;
+            typeEl.value = meal.type;
+            nameEl.value = meal.meal;
+            recipeEl.value = meal.recipe;
+            form.setAttribute('data-meal-id', meal.id);
+            modalTitle.textContent = 'Mahlzeit bearbeiten';
+            saveBtn.textContent = 'Änderungen speichern';
+            saveBtn.style.display = '';
+            delBtn.style.display = '';
+        }
+        this.openModal('mealModal');
+    }
+    saveMeal() {
+        const form = document.getElementById('mealForm');
+        const mealId = form.getAttribute('data-meal-id');
+        const date = document.getElementById('mealDate').value;
+        const type = document.getElementById('mealType').value;
+        const name = document.getElementById('mealName').value;
+        const recipe = document.getElementById('mealRecipe').value;
+        if (!date || !type || !name) {
+            this.showToast('Bitte füllen Sie alle Pflichtfelder aus!', 'error');
+            return;
+        }
+        if (mealId) {
+            const meal = this.data.meals.find(m => m.id == mealId);
+            if (meal) {
+                meal.date = date;
+                meal.type = type;
+                meal.meal = name;
+                meal.recipe = recipe;
+                this.showToast('Mahlzeit aktualisiert!', 'success');
+            }
+        } else {
+            this.data.meals.push({
+                id: this.generateId(),
+                date,
+                type,
+                meal: name,
+                recipe
+            });
+            this.showToast('Mahlzeit hinzugefügt!', 'success');
+        }
+        this.closeModal('mealModal');
+        this.renderMeals();
+        this.renderDashboard();
+    }
+    openShoppingModal(mode, itemId = null, listId = null) {
+        const modal = document.getElementById('shoppingModal');
+        const form = document.getElementById('shoppingForm');
+        const storeEl = document.getElementById('shoppingStore');
+        const nameEl = document.getElementById('shoppingName');
+        const quantityEl = document.getElementById('shoppingQuantity');
+        const saveBtn = document.getElementById('saveShoppingBtn');
+        const delBtn = document.getElementById('deleteShoppingBtn');
+        const modalTitle = modal.querySelector('.modal-header h3');
+        form.reset();
+        if (mode === 'new') {
+            modalTitle.textContent = 'Artikel hinzufügen';
+            saveBtn.textContent = 'Speichern';
+            saveBtn.style.display = '';
+            delBtn.style.display = 'none';
+            form.removeAttribute('data-item-id');
+            form.removeAttribute('data-list-id');
+        } else {
+            const list = this.data.shopping.find(l => l.id == listId);
+            if (!list) return;
+            const item = list.items.find(i => i.id == itemId);
+            if (!item) return;
+            storeEl.value = list.store;
+            nameEl.value = item.name;
+            quantityEl.value = item.quantity;
+            form.setAttribute('data-item-id', item.id);
+            form.setAttribute('data-list-id', list.id);
+            modalTitle.textContent = 'Artikel bearbeiten';
+            saveBtn.textContent = 'Änderungen speichern';
+            saveBtn.style.display = '';
+            delBtn.style.display = '';
+        }
+        this.openModal('shoppingModal');
+    }
+    saveShoppingItem() {
+        const form = document.getElementById('shoppingForm');
+        const itemId = form.getAttribute('data-item-id');
+        const listId = form.getAttribute('data-list-id');
+        const store = document.getElementById('shoppingStore').value;
+        const name = document.getElementById('shoppingName').value;
+        const quantity = document.getElementById('shoppingQuantity').value;
+        if (!store || !name || !quantity) {
+            this.showToast('Bitte füllen Sie alle Pflichtfelder aus!', 'error');
+            return;
+        }
+        let list = this.data.shopping.find(l => l.store === store);
+        if (!list) {
+            list = { id: this.generateId(), store, items: [] };
+            this.data.shopping.push(list);
+        }
+        if (itemId && listId) {
+            // Update bestehendes Item
+            const oldList = this.data.shopping.find(l => l.id == listId);
+            if (!oldList) return;
+            const item = oldList.items.find(i => i.id == itemId);
+            if (item) {
+                item.name = name;
+                item.quantity = quantity;
+                // Falls Store geändert wurde, Item verschieben
+                if (oldList.store !== store) {
+                    oldList.items = oldList.items.filter(i => i.id != itemId);
+                    list.items.push(item);
+                }
+                this.showToast('Artikel aktualisiert!', 'success');
+            }
+        } else {
+            list.items.push({
+                id: this.generateId(),
+                name,
+                quantity,
+                completed: false
+            });
+            this.showToast('Artikel hinzugefügt!', 'success');
+        }
+        this.closeModal('shoppingModal');
+        this.renderShopping();
+        this.renderDashboard();
+    }
+    openRecipeModal(mode, recipeId = null) {
+        const modal = document.getElementById('recipeModal');
+        const form = document.getElementById('recipeForm');
+        const nameEl = document.getElementById('recipeName');
+        const descEl = document.getElementById('recipeDescription');
+        const ingEl = document.getElementById('recipeIngredients');
+        const instrEl = document.getElementById('recipeInstructions');
+        const saveBtn = document.getElementById('saveRecipeBtn');
+        const delBtn = document.getElementById('deleteRecipeBtn');
+        const modalTitle = modal.querySelector('.modal-header h3');
+        form.reset();
+        if (mode === 'new') {
+            modalTitle.textContent = 'Rezept hinzufügen';
+            saveBtn.textContent = 'Speichern';
+            saveBtn.style.display = '';
+            delBtn.style.display = 'none';
+            form.removeAttribute('data-recipe-id');
+        } else {
+            const recipe = this.data.recipes.find(r => r.id == recipeId);
+            if (!recipe) return;
+            nameEl.value = recipe.name;
+            descEl.value = recipe.description;
+            ingEl.value = recipe.ingredients.join(', ');
+            instrEl.value = recipe.instructions;
+            form.setAttribute('data-recipe-id', recipe.id);
+            modalTitle.textContent = 'Rezept bearbeiten';
+            saveBtn.textContent = 'Änderungen speichern';
+            saveBtn.style.display = '';
+            delBtn.style.display = '';
+        }
+        this.openModal('recipeModal');
+    }
+    saveRecipe() {
+        const form = document.getElementById('recipeForm');
+        const recipeId = form.getAttribute('data-recipe-id');
+        const name = document.getElementById('recipeName').value;
+        const description = document.getElementById('recipeDescription').value;
+        const ingredients = document.getElementById('recipeIngredients').value.split(',').map(s => s.trim()).filter(Boolean);
+        const instructions = document.getElementById('recipeInstructions').value;
+        if (!name) {
+            this.showToast('Bitte füllen Sie den Namen aus!', 'error');
+            return;
+        }
+        if (recipeId) {
+            const recipe = this.data.recipes.find(r => r.id == recipeId);
+            if (recipe) {
+                recipe.name = name;
+                recipe.description = description;
+                recipe.ingredients = ingredients;
+                recipe.instructions = instructions;
+                this.showToast('Rezept aktualisiert!', 'success');
+            }
+        } else {
+            this.data.recipes.push({
+                id: this.generateId(),
+                name,
+                description,
+                ingredients,
+                instructions
+            });
+            this.showToast('Rezept hinzugefügt!', 'success');
+        }
+        this.closeModal('recipeModal');
+        this.renderRecipes();
     }
 }
 
