@@ -383,6 +383,50 @@ class FamilienHub {
         }
 
         calendarGrid.innerHTML = days.join('');
+
+        // Interaktivität: Klick auf Kalendertag für neuen Termin
+        calendarGrid.querySelectorAll('.calendar-day').forEach(dayEl => {
+            dayEl.addEventListener('click', (e) => {
+                // Nur auslösen, wenn nicht auf ein Event geklickt wurde
+                if (e.target.classList.contains('calendar-event')) return;
+                // Datum extrahieren
+                const dayNumber = dayEl.querySelector('.calendar-day-number').textContent;
+                const month = this.currentDate.getMonth();
+                const year = this.currentDate.getFullYear();
+                // Prüfen, ob Tag zu anderem Monat gehört
+                let date = new Date(year, month, dayNumber);
+                if (dayEl.classList.contains('other-month')) {
+                    if (parseInt(dayNumber) > 15) {
+                        // Vorheriger Monat
+                        date = new Date(year, month - 1, dayNumber);
+                    } else {
+                        // Nächster Monat
+                        date = new Date(year, month + 1, dayNumber);
+                    }
+                }
+                // Datum ins Formular eintragen
+                document.getElementById('eventDate').value = date.toISOString().split('T')[0];
+                this.openModal('eventModal');
+            });
+        });
+
+        // Klick auf Event: Details anzeigen (Modal mit Infos)
+        calendarGrid.querySelectorAll('.calendar-event').forEach(eventEl => {
+            eventEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const eventTitle = eventEl.getAttribute('title');
+                const event = this.data.events.find(ev => ev.title === eventTitle);
+                if (event) {
+                    // Felder im Modal ausfüllen
+                    document.getElementById('eventTitle').value = event.title;
+                    document.getElementById('eventDate').value = event.date;
+                    document.getElementById('eventTime').value = event.time;
+                    document.getElementById('eventMember').value = event.member;
+                    document.getElementById('eventDescription').value = event.description;
+                    this.openModal('eventModal');
+                }
+            });
+        });
     }
 
     renderMeals() {
