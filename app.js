@@ -303,6 +303,68 @@ class FamilienHub {
                 }
             }
         });
+
+        // --- NEU: Mahlzeit hinzufügen Button ---
+        const addMealBtn = document.getElementById('addMealBtn');
+        if (addMealBtn) {
+            addMealBtn.addEventListener('click', () => {
+                // Einfaches Prompt für Demo, später Modal
+                const date = prompt('Für welches Datum (YYYY-MM-DD) soll die Mahlzeit hinzugefügt werden?');
+                if (!date) return;
+                const mealType = prompt('Für welche Mahlzeit? (breakfast, lunch, dinner)');
+                if (!['breakfast','lunch','dinner'].includes(mealType)) return;
+                const meal = prompt('Name der Mahlzeit?');
+                if (!meal) return;
+                this.data.meals.push({
+                    id: this.generateId(),
+                    date,
+                    type: mealType,
+                    meal,
+                    recipe: ''
+                });
+                this.renderMeals();
+                this.renderDashboard();
+                this.showToast('Mahlzeit hinzugefügt!','success');
+            });
+        }
+
+        // --- NEU: Shopping-Item hinzufügen Button ---
+        const addShoppingItemBtn = document.getElementById('addShoppingItemBtn');
+        if (addShoppingItemBtn) {
+            addShoppingItemBtn.addEventListener('click', () => {
+                const store = prompt('Für welches Geschäft? (z.B. Supermarkt)');
+                if (!store) return;
+                const name = prompt('Name des Artikels?');
+                if (!name) return;
+                const quantity = prompt('Menge? (z.B. 1 Stück, 500g)');
+                if (!quantity) return;
+                // Finde oder erstelle Liste
+                let list = this.data.shopping.find(l => l.store === store);
+                if (!list) {
+                    list = { id: this.generateId(), store, items: [] };
+                    this.data.shopping.push(list);
+                }
+                list.items.push({
+                    id: this.generateId(),
+                    name,
+                    quantity,
+                    completed: false
+                });
+                this.renderShopping();
+                this.renderDashboard();
+                this.showToast('Artikel hinzugefügt!','success');
+            });
+        }
+
+        // --- NEU: Delegation für .add-to-mealplan-btn ---
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.add-to-mealplan-btn');
+            if (btn) {
+                const recipeId = parseInt(btn.dataset.recipeId);
+                if (!recipeId) return;
+                this.openAddMealModal(recipeId);
+            }
+        });
     }
 
     switchModule(module) {
