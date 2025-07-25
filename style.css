@@ -1107,6 +1107,12 @@ select.form-control {
   border-color: var(--color-primary);
 }
 
+.meal-slot.drag-over {
+  border-color: var(--color-success);
+  background-color: var(--color-success);
+  color: var(--color-btn-primary-text);
+}
+
 /* Shopping */
 .shopping-container {
   display: grid;
@@ -1508,4 +1514,46 @@ select.form-control {
   .module-actions {
     align-self: flex-end;
   }
+}
+
+.recipes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.recipe-card {
+  background: var(--color-surface);
+  border: 2px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  width: 260px;
+  cursor: grab;
+  transition: box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-card:active {
+  cursor: grabbing;
+  box-shadow: var(--shadow-lg);
+}
+
+.recipe-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: 4px;
+}
+
+.recipe-desc {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: 8px;
+}
+
+.add-to-mealplan-btn {
+  margin-top: auto;
 }
