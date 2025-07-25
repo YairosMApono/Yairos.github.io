@@ -46,6 +46,22 @@ class FamilienHub {
                     recipe: 'Wiener Schnitzel'
                 }
             ],
+            recipes: [
+                {
+                    id: 1,
+                    name: 'Spaghetti Bolognese',
+                    description: 'Klassische italienische Bolognese',
+                    ingredients: ['Spaghetti', 'Hackfleisch', 'Tomaten', 'Zwiebeln', 'Knoblauch', 'Karotten', 'Sellerie', 'Rotwein', 'Olivenöl', 'Salz', 'Pfeffer'],
+                    instructions: 'Zwiebeln, Knoblauch, Karotten und Sellerie fein hacken und in Olivenöl anbraten. Hackfleisch dazugeben und krümelig braten. Mit Rotwein ablöschen, Tomaten zugeben und ca. 1 Stunde köcheln lassen. Mit Salz und Pfeffer abschmecken. Mit Spaghetti servieren.'
+                },
+                {
+                    id: 2,
+                    name: 'Wiener Schnitzel',
+                    description: 'Klassisches Wiener Schnitzel mit Kartoffeln',
+                    ingredients: ['Kalbsschnitzel', 'Mehl', 'Eier', 'Paniermehl', 'Butterschmalz', 'Salz', 'Pfeffer', 'Kartoffeln'],
+                    instructions: 'Schnitzel plattieren, salzen, pfeffern, in Mehl, Ei und Paniermehl wenden. In Butterschmalz goldgelb ausbacken. Mit gekochten Kartoffeln servieren.'
+                }
+            ],
             shopping: [
                 {
                     id: 1,
@@ -138,6 +154,7 @@ class FamilienHub {
         this.renderMeals();
         this.renderShopping();
         this.renderSettings();
+        this.renderRecipes();
     }
 
     setupEventListeners() {
@@ -196,6 +213,92 @@ class FamilienHub {
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 this.closeModal(e.target.id);
+            }
+        });
+
+        // Rezept zu Essensplan hinzufügen (per Button)
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('add-to-mealplan-btn')) {
+                const recipeId = parseInt(e.target.dataset.recipeId);
+                this.openAddMealModal(recipeId);
+            }
+        });
+
+        // Drag & Drop für Rezepte -> Essensplan
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('recipe-card')) {
+                e.dataTransfer.setData('recipeId', e.target.dataset.recipeId);
+                e.dataTransfer.effectAllowed = 'copy';
+            }
+        });
+
+        // Drop-Events für meal-slots
+        document.addEventListener('dragover', (e) => {
+            if (e.target.classList.contains('meal-slot')) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                e.target.classList.add('drag-over');
+            }
+        });
+        document.addEventListener('dragleave', (e) => {
+            if (e.target.classList.contains('meal-slot')) {
+                e.target.classList.remove('drag-over');
+            }
+        });
+        document.addEventListener('drop', (e) => {
+            if (e.target.classList.contains('meal-slot')) {
+                e.preventDefault();
+                e.target.classList.remove('drag-over');
+                const recipeId = parseInt(e.dataTransfer.getData('recipeId'));
+                if (!recipeId) return;
+                const recipe = this.data.recipes.find(r => r.id === recipeId);
+                if (!recipe) return;
+                // Slot-Infos aus data-Attributen holen
+                const date = e.target.dataset.date;
+                const mealType = e.target.dataset.mealType;
+                if (!date || !mealType) return;
+                this.data.meals.push({
+                    id: this.generateId(),
+                    date,
+                    type: mealType,
+                    meal: recipe.name,
+                    recipe: recipe.description
+                });
+                this.renderMeals();
+                this.renderDashboard();
+                this.showToast('Rezept zum Essensplan hinzugefügt!','success');
+            }
+        });
+        // Drag & Drop für Mahlzeiten im Plan verschieben
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('meal-slot') && e.target.classList.contains('has-meal')) {
+                const date = e.target.dataset.date;
+                const mealType = e.target.dataset.mealType;
+                e.dataTransfer.setData('moveMeal', JSON.stringify({date, mealType}));
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        });
+        document.addEventListener('drop', (e) => {
+            if (e.target.classList.contains('meal-slot')) {
+                // ... bestehende Rezept-Drop-Logik ...
+                const moveMeal = e.dataTransfer.getData('moveMeal');
+                if (moveMeal) {
+                    const {date: fromDate, mealType: fromType} = JSON.parse(moveMeal);
+                    const toDate = e.target.dataset.date;
+                    const toType = e.target.dataset.mealType;
+                    if (!fromDate || !fromType || !toDate || !toType) return;
+                    // Finde und verschiebe die Mahlzeit
+                    const mealIdx = this.data.meals.findIndex(m => m.date === fromDate && m.type === fromType);
+                    if (mealIdx === -1) return;
+                    const meal = this.data.meals[mealIdx];
+                    // Ziel-Slot ggf. überschreiben
+                    const targetIdx = this.data.meals.findIndex(m => m.date === toDate && m.type === toType);
+                    if (targetIdx !== -1) this.data.meals.splice(targetIdx, 1);
+                    this.data.meals[mealIdx] = {...meal, date: toDate, type: toType};
+                    this.renderMeals();
+                    this.renderDashboard();
+                    this.showToast('Mahlzeit verschoben!','success');
+                }
             }
         });
     }
@@ -400,8 +503,8 @@ class FamilienHub {
                 
                 const mealClass = meal ? 'meal-slot has-meal' : 'meal-slot';
                 const mealContent = meal ? meal.meal : 'Klicken zum Hinzufügen';
-                
-                html += `<div class="${mealClass}">${mealContent}</div>`;
+                // data-Attribute für Drag & Drop
+                html += `<div class="${mealClass}" data-date="${dateStr}" data-meal-type="${mealType === 'Frühstück' ? 'breakfast' : mealType === 'Mittagessen' ? 'lunch' : 'dinner'}" draggable="${meal ? 'true' : 'false'}">${mealContent}</div>`;
             }
         });
 
@@ -582,6 +685,43 @@ class FamilienHub {
     loadData() {
         // In a real application, this would load from localStorage
         console.log('Daten geladen:', this.data);
+    }
+
+    renderRecipes() {
+        const recipesModule = document.getElementById('recipes-module');
+        if (!recipesModule) return;
+        const comingSoon = recipesModule.querySelector('.coming-soon');
+        if (comingSoon) comingSoon.remove();
+        let html = '<div class="recipes-list">';
+        this.data.recipes.forEach(recipe => {
+            html += `<div class="recipe-card" draggable="true" data-recipe-id="${recipe.id}">
+                <div class="recipe-title">${recipe.name}</div>
+                <div class="recipe-desc">${recipe.description}</div>
+                <button class="btn btn--secondary add-to-mealplan-btn" data-recipe-id="${recipe.id}">Zum Essensplan hinzufügen</button>
+            </div>`;
+        });
+        html += '</div>';
+        recipesModule.insertAdjacentHTML('beforeend', html);
+    }
+
+    openAddMealModal(recipeId) {
+        // Einfaches Prompt für Tag und Mahlzeit (später Modal)
+        const recipe = this.data.recipes.find(r => r.id === recipeId);
+        if (!recipe) return;
+        const date = prompt('Für welches Datum (YYYY-MM-DD) soll das Rezept eingeplant werden?');
+        if (!date) return;
+        const mealType = prompt('Für welche Mahlzeit? (breakfast, lunch, dinner)');
+        if (!['breakfast','lunch','dinner'].includes(mealType)) return;
+        this.data.meals.push({
+            id: this.generateId(),
+            date,
+            type: mealType,
+            meal: recipe.name,
+            recipe: recipe.description
+        });
+        this.renderMeals();
+        this.renderDashboard();
+        this.showToast('Rezept zum Essensplan hinzugefügt!','success');
     }
 }
 
