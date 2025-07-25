@@ -385,6 +385,14 @@ pre code {
   cursor: not-allowed;
 }
 
+.btn--danger {
+  background-color: var(--color-error, #e53935);
+  color: #fff;
+}
+.btn--danger:hover {
+  background-color: #b71c1c;
+}
+
 /* Form elements */
 .form-control {
   display: block;

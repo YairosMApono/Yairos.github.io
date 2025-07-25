@@ -168,7 +168,7 @@ class FamilienHub {
 
         // Modal handling
         document.getElementById('addEventBtn').addEventListener('click', () => {
-            this.openModal('eventModal');
+            this.openEventModal('new');
         });
 
         document.getElementById('closeEventModal').addEventListener('click', () => {
@@ -181,6 +181,16 @@ class FamilienHub {
 
         document.getElementById('saveEventBtn').addEventListener('click', () => {
             this.saveEvent();
+        });
+        document.getElementById('deleteEventBtn').addEventListener('click', () => {
+            this.deleteEvent();
+        });
+        // Umschalten von Ansicht zu Bearbeiten im Modal
+        document.getElementById('eventForm').addEventListener('dblclick', (e) => {
+            const form = e.currentTarget;
+            if (form.getAttribute('data-event-id')) {
+                this.openEventModal('edit', parseInt(form.getAttribute('data-event-id')));
+            }
         });
 
         // Settings
@@ -196,6 +206,17 @@ class FamilienHub {
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 this.closeModal(e.target.id);
+            }
+        });
+
+        // Kalender-Event-Klick-Handler (Delegation)
+        document.getElementById('calendarGrid').addEventListener('click', (e) => {
+            const eventEl = e.target.closest('.calendar-event');
+            if (eventEl) {
+                const eventId = eventEl.dataset.id;
+                if (eventId) {
+                    this.openEventModal('view', parseInt(eventId));
+                }
             }
         });
     }
@@ -350,7 +371,7 @@ class FamilienHub {
             if (isOtherMonth) dayClass += ' other-month';
             
             const eventsHtml = dayEvents.map(event => 
-                `<div class="calendar-event" title="${event.title}">${event.title}</div>`
+                `<div class="calendar-event" data-id="${event.id}" title="${event.title}">${event.title}</div>`
             ).join('');
             
             days.push(`
@@ -468,35 +489,114 @@ class FamilienHub {
         }
     }
 
+    openEventModal(mode, eventId = null) {
+        // mode: 'new', 'edit', 'view'
+        const modal = document.getElementById('eventModal');
+        const form = document.getElementById('eventForm');
+        const titleEl = document.getElementById('eventTitle');
+        const dateEl = document.getElementById('eventDate');
+        const timeEl = document.getElementById('eventTime');
+        const memberEl = document.getElementById('eventMember');
+        const descEl = document.getElementById('eventDescription');
+        const saveBtn = document.getElementById('saveEventBtn');
+        const delBtn = document.getElementById('deleteEventBtn');
+        const modalTitle = modal.querySelector('.modal-header h3');
+        form.reset();
+        if (mode === 'new') {
+            modalTitle.textContent = 'Neuer Termin';
+            saveBtn.textContent = 'Speichern';
+            saveBtn.style.display = '';
+            if (delBtn) delBtn.style.display = 'none';
+            form.removeAttribute('data-event-id');
+            titleEl.readOnly = false;
+            dateEl.readOnly = false;
+            timeEl.readOnly = false;
+            memberEl.disabled = false;
+            descEl.readOnly = false;
+        } else {
+            const event = this.data.events.find(ev => ev.id === eventId);
+            if (!event) return;
+            titleEl.value = event.title;
+            dateEl.value = event.date;
+            timeEl.value = event.time;
+            memberEl.value = event.member;
+            descEl.value = event.description;
+            form.setAttribute('data-event-id', event.id);
+            if (mode === 'view') {
+                modalTitle.textContent = 'Termin anzeigen';
+                saveBtn.style.display = 'none';
+                if (delBtn) delBtn.style.display = '';
+                titleEl.readOnly = true;
+                dateEl.readOnly = true;
+                timeEl.readOnly = true;
+                memberEl.disabled = true;
+                descEl.readOnly = true;
+            } else if (mode === 'edit') {
+                modalTitle.textContent = 'Termin bearbeiten';
+                saveBtn.textContent = 'Änderungen speichern';
+                saveBtn.style.display = '';
+                if (delBtn) delBtn.style.display = '';
+                titleEl.readOnly = false;
+                dateEl.readOnly = false;
+                timeEl.readOnly = false;
+                memberEl.disabled = false;
+                descEl.readOnly = false;
+            }
+        }
+        this.openModal('eventModal');
+    }
+
     saveEvent() {
         const form = document.getElementById('eventForm');
-        const formData = new FormData(form);
-        
+        const eventId = form.getAttribute('data-event-id');
         const title = document.getElementById('eventTitle').value;
         const date = document.getElementById('eventDate').value;
         const time = document.getElementById('eventTime').value;
         const member = document.getElementById('eventMember').value;
         const description = document.getElementById('eventDescription').value;
-
         if (!title || !date) {
             this.showToast('Bitte füllen Sie alle Pflichtfelder aus!', 'error');
             return;
         }
-
-        const newEvent = {
-            id: Date.now(),
-            title,
-            date,
-            time,
-            member,
-            description
-        };
-
-        this.data.events.push(newEvent);
+        if (eventId) {
+            // Update bestehendes Event
+            const event = this.data.events.find(ev => ev.id == eventId);
+            if (event) {
+                event.title = title;
+                event.date = date;
+                event.time = time;
+                event.member = member;
+                event.description = description;
+                this.showToast('Termin aktualisiert!', 'success');
+            }
+        } else {
+            // Neues Event
+            const newEvent = {
+                id: Date.now(),
+                title,
+                date,
+                time,
+                member,
+                description
+            };
+            this.data.events.push(newEvent);
+            this.showToast('Termin erfolgreich hinzugefügt!', 'success');
+        }
         this.closeModal('eventModal');
         this.renderCalendar();
         this.renderDashboard();
-        this.showToast('Termin erfolgreich hinzugefügt!', 'success');
+    }
+
+    deleteEvent() {
+        const form = document.getElementById('eventForm');
+        const eventId = form.getAttribute('data-event-id');
+        if (eventId) {
+            this.data.events = this.data.events.filter(ev => ev.id != eventId);
+            this.showToast('Termin gelöscht!', 'success');
+            this.closeModal('eventModal');
+            this.renderCalendar();
+            this.renderDashboard();
+        }
     }
 
     toggleShoppingItem(listId, itemId) {
