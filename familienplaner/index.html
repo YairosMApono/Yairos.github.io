@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f766e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Familienplaner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --teal: #0f766e;
+            --teal-light: #14b8a6;
+            --bg: #f0fdfa;
+            --card: #fff;
+            --text: #134e4a;
+            --muted: #5eead4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 70px; }
+        .header { background: var(--teal); color: #fff; padding: 1rem max(1rem, env(safe-area-inset-left)); display: flex; align-items: center; gap: 1rem; }
+        .back-link { color: #fff; text-decoration: none; font-size: 1.2rem; padding: 0.5rem; }
+        .header h1 { font-size: 1.25rem; }
+        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid #e2e8f0; display: flex; overflow-x: auto; padding: 0.5rem env(safe-area-inset-right) 0.5rem env(safe-area-inset-left); padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
+        .nav-btn { flex: 1; min-width: 60px; padding: 0.5rem; border: none; background: none; cursor: pointer; font-size: 1.5rem; color: #94a3b8; transition: color 0.2s; touch-action: manipulation; }
+        .nav-btn.active { color: var(--teal); }
+        .nav-btn span { display: block; font-size: 0.65rem; margin-top: 2px; }
+        .section { display: none; padding: 1rem; padding-bottom: 2rem; }
+        .section.active { display: block; }
+        .card { background: var(--card); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h3 { font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--teal); }
+        .btn { background: var(--teal); color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; touch-action: manipulation; }
+        .btn:hover { background: var(--teal-light); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+        .btn-danger { background: #dc2626; }
+        input, select, textarea { width: 100%; padding: 0.6rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .form-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .form-row input { flex: 1; }
+        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid #f1f5f9; gap: 0.5rem; }
+        .list-item:last-child { border-bottom: none; }
+        .list-item.done { opacity: 0.6; text-decoration: line-through; }
+        .list-item input[type="checkbox"] { width: 20px; height: 20px; margin: 0; }
+        .del-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 0.25rem; font-size: 1.1rem; }
+        .del-btn:hover { color: #dc2626; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.8rem; cursor: pointer; min-height: 40px; }
+        .cal-day.other { color: #cbd5e1; }
+        .cal-day.today { background: var(--teal); color: #fff; }
+        .cal-day.has-event { background: rgba(20,184,166,0.3); }
+        .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .cal-nav button { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem; }
+        .event-dot { width: 4px; height: 4px; background: var(--teal); border-radius: 50%; margin-top: 2px; }
+        .empty-msg { color: #94a3b8; text-align: center; padding: 2rem; font-size: 0.9rem; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+        .modal.show { display: flex; }
+        .modal-content { background: var(--card); border-radius: 16px; padding: 1.5rem; max-width: 400px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-content h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+        .modal-actions { display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end; }
+        .badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: var(--muted); }
+        .chat-msg { padding: 0.75rem; background: #f1f5f9; border-radius: 8px; margin-bottom: 0.5rem; }
+        .chat-msg time { font-size: 0.75rem; color: #94a3b8; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        @media (max-width: 500px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="../" class="back-link">←</a>
+        <h1>👨‍👩‍👧‍👦 Familienplaner</h1>
+    </header>
+
+    <nav class="nav">
+        <button class="nav-btn active" data-section="calendar">📅<span>Kalender</span></button>
+        <button class="nav-btn" data-section="tasks">✅<span>Aufgaben</span></button>
+        <button class="nav-btn" data-section="meals">🍽️<span>Essen</span></button>
+        <button class="nav-btn" data-section="budget">💰<span>Budget</span></button>
+        <button class="nav-btn" data-section="contacts">👤<span>Kontakte</span></button>
+        <button class="nav-btn" data-section="shopping">🛒<span>Einkauf</span></button>
+        <button class="nav-btn" data-section="vacation">🏖️<span>Urlaub</span></button>
+        <button class="nav-btn" data-section="chat">💬<span>Pinnwand</span></button>
+        <button class="nav-btn" data-section="birthdays">🎂<span>Geburtstage</span></button>
+    </nav>
+
+    <main>
+        <!-- Kalender -->
+        <section id="calendar" class="section active">
+            <div class="card">
+                <div class="cal-nav">
+                    <button id="calPrev">◀</button>
+                    <span id="calMonth"></span>
+                    <button id="calNext">▶</button>
+                </div>
+                <div class="calendar-grid" id="calGrid"></div>
+            </div>
+            <div class="card">
+                <h3>Termine am <span id="selectedDate"></span></h3>
+                <div id="dayEvents"></div>
+                <button class="btn" onclick="openEventModal()">+ Termin hinzufügen</button>
+            </div>
+        </section>
+
+        <!-- Aufgaben -->
+        <section id="tasks" class="section">
+            <div class="card">
+                <h3>Neue Aufgabe</h3>
+                <input type="text" id="taskInput" placeholder="Aufgabe eingeben">
+                <div class="form-row">
+                    <input type="date" id="taskDate">
+                    <select id="taskPriority">
+                        <option value="low">Niedrig</option>
+                        <option value="medium" selected>Mittel</option>
+                        <option value="high">Hoch</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="addTask()">Hinzufügen</button>
+            </div>
+            <div class="card">
+                <h3>Meine Aufgaben</h3>
+                <div id="taskList"></div>
+            </div>
+        </section>
+
+        <!-- Essensplan -->
+        <section id="meals" class="section">
+            <div class="card">
+                <h3>Essensplan</h3>
+                <div id="mealPlan"></div>
+                <button class="btn" onclick="openMealModal()">+ Gericht hinzufügen</button>
+            </div>
+        </section>
+
+        <!-- Budget -->
+        <section id="budget" class="section">
+            <div class="card">
+                <h3>Übersicht</h3>
+                <p>Einnahmen: <strong id="totalIncome">0 €</strong></p>
+                <p>Ausgaben: <strong id="totalExpense">0 €</strong></p>
+                <p>Saldo: <strong id="balance">0 €</strong></p>
+            </div>
+            <div class="card">
+                <h3>Neuer Eintrag</h3>
+                <select id="budgetType">
+                    <option value="income">Einnahme</option>
+                    <option value="expense">Ausgabe</option>
+                </select>
+                <input type="number" id="budgetAmount" placeholder="Betrag (€)" step="0.01">
+                <input type="text" id="budgetDesc" placeholder="Beschreibung">
+                <input type="date" id="budgetDate">
+                <select id="budgetCategory">
+                    <option>Gehalt</option>
+                    <option>Sonstiges</option>
+                    <option>Lebensmittel</option>
+                    <option>Miete</option>
+                    <option>Transport</option>
+                    <option>Freizeit</option>
+                    <option>Kleidung</option>
+                    <option>Gesundheit</option>
+                </select>
+                <button class="btn" onclick="addBudgetEntry()">Hinzufügen</button>
+            </div>
+            <div class="card">
+                <h3>Verlauf</h3>
+                <div id="budgetList"></div>
+            </div>
+        </section>
+
+        <!-- Kontakte -->
+        <section id="contacts" class="section">
+            <div class="card">
+                <h3>Neuer Kontakt</h3>
+                <input type="text" id="contactName" placeholder="Name">
+                <input type="tel" id="contactPhone" placeholder="Telefon">
+                <input type="email" id="contactEmail" placeholder="E-Mail">
+                <input type="text" id="contactNote" placeholder="Notiz">
+                <button class="btn" onclick="addContact()">Hinzufügen</button>
+            </div>
+            <div class="card">
+                <h3>Kontakte</h3>
+                <div id="contactList"></div>
+            </div>
+        </section>
+
+        <!-- Einkaufsliste -->
+        <section id="shopping" class="section">
+            <div class="card">
+                <h3>Einkaufsliste</h3>
+                <div class="form-row">
+                    <input type="text" id="shopInput" placeholder="Artikel">
+                    <select id="shopCategory">
+                        <option>Lebensmittel</option>
+                        <option>Haushalt</option>
+                        <option>Drogerie</option>
+                        <option>Sonstiges</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="addShoppingItem()">Hinzufügen</button>
+                <div id="shopList" style="margin-top: 1rem;"></div>
+            </div>
+        </section>
+
+        <!-- Urlaubsplanung -->
+        <section id="vacation" class="section">
+            <div class="card">
+                <h3>Urlaubsplanung</h3>
+                <input type="text" id="vacDest" placeholder="Reiseziel">
+                <div class="form-row">
+                    <input type="date" id="vacStart" placeholder="Von">
+                    <input type="date" id="vacEnd" placeholder="Bis">
+                </div>
+                <input type="number" id="vacBudget" placeholder="Budget (€)" step="0.01">
+                <textarea id="vacNotes" placeholder="Notizen, Packliste..."></textarea>
+                <button class="btn" onclick="addVacation()">Hinzufügen</button>
+            </div>
+            <div id="vacationList"></div>
+        </section>
+
+        <!-- Familien-Pinnwand (Chat) -->
+        <section id="chat" class="section">
+            <div class="card">
+                <h3>Familien-Pinnwand</h3>
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;">Nachrichten für die Familie (werden auf diesem Gerät gespeichert)</p>
+                <div class="form-row">
+                    <input type="text" id="chatAuthor" placeholder="Von (Name)">
+                    <input type="text" id="chatMsg" placeholder="Nachricht">
+                </div>
+                <button class="btn" onclick="addChatMsg()">Posten</button>
+            </div>
+            <div id="chatList"></div>
+        </section>
+
+        <!-- Geburtstage -->
+        <section id="birthdays" class="section">
+            <div class="card">
+                <h3>Geburtstage</h3>
+                <input type="text" id="bdName" placeholder="Name">
+                <input type="date" id="bdDate" placeholder="Geburtstag">
+                <button class="btn" onclick="addBirthday()">Hinzufügen</button>
+            </div>
+            <div id="birthdayList"></div>
+        </section>
+    </main>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <h2>Termin hinzufügen</h2>
+            <input type="text" id="eventTitle" placeholder="Titel">
+            <input type="datetime-local" id="eventStart">
+            <input type="datetime-local" id="eventEnd">
+            <textarea id="eventDesc" placeholder="Beschreibung"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="closeEventModal()">Abbrechen</button>
+                <button class="btn" onclick="saveEvent()">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meal Modal -->
+    <div id="mealModal" class="modal">
+        <div class="modal-content">
+            <h2>Gericht hinzufügen</h2>
+            <input type="date" id="mealDate">
+            <select id="mealType">
+                <option>Frühstück</option>
+                <option>Mittagessen</option>
+                <option>Abendessen</option>
+                <option>Snack</option>
+            </select>
+            <input type="text" id="mealDish" placeholder="Gericht">
+            <textarea id="mealIngredients" placeholder="Zutaten (optional)"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="closeMealModal()">Abbrechen</button>
+                <button class="btn" onclick="saveMeal()">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE = {
+            events: () => JSON.parse(localStorage.getItem('fp-events') || '[]'),
+            tasks: () => JSON.parse(localStorage.getItem('fp-tasks') || '[]'),
+            meals: () => JSON.parse(localStorage.getItem('fp-meals') || '[]'),
+            budget: () => JSON.parse(localStorage.getItem('fp-budget') || '[]'),
+            contacts: () => JSON.parse(localStorage.getItem('fp-contacts') || '[]'),
+            shopping: () => JSON.parse(localStorage.getItem('fp-shopping') || '[]'),
+            vacation: () => JSON.parse(localStorage.getItem('fp-vacation') || '[]'),
+            chat: () => JSON.parse(localStorage.getItem('fp-chat') || '[]'),
+            birthdays: () => JSON.parse(localStorage.getItem('fp-birthdays') || '[]'),
+            save: (key, data) => localStorage.setItem('fp-' + key, JSON.stringify(data))
+        };
+
+        let currentDate = new Date();
+        let selectedDate = new Date();
+
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.section).classList.add('active');
+                renderAll();
+            });
+        });
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().slice(0,10);
+            const dateInputs = ['taskDate','budgetDate','vacStart','vacEnd'];
+            dateInputs.forEach(id => { const el = document.getElementById(id); if (el && !el.value) el.value = today; });
+        }
+        function renderAll() {
+            setDefaultDates();
+            renderCalendar();
+            renderTasks();
+            renderMeals();
+            renderBudget();
+            renderContacts();
+            renderShopping();
+            renderVacation();
+            renderChat();
+            renderBirthdays();
+        }
+
+        // Kalender
+        function renderCalendar() {
+            const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+            document.getElementById('calMonth').textContent = months[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
+            const grid = document.getElementById('calGrid');
+            grid.innerHTML = '<div style="grid-column:1/8;display:flex;gap:2px;font-size:0.7rem;color:#64748b">Mo Di Mi Do Fr Sa So</div>';
+            const first = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const dayOfWeek = first.getDay();
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            first.setDate(first.getDate() - daysToMonday);
+            const events = STORAGE.events();
+            for (let i = 0; i < 42; i++) {
+                const d = new Date(first);
+                d.setDate(first.getDate() + i);
+                const isOther = d.getMonth() !== currentDate.getMonth();
+                const isToday = d.toDateString() === new Date().toDateString();
+                const hasEv = events.some(e => new Date(e.start).toDateString() === d.toDateString());
+                const div = document.createElement('div');
+                div.className = 'cal-day' + (isOther ? ' other' : '') + (isToday ? ' today' : '') + (hasEv ? ' has-event' : '');
+                div.textContent = d.getDate();
+                if (hasEv) div.innerHTML += '<span class="event-dot"></span>';
+                div.onclick = () => { selectedDate = d; renderCalendar(); renderDayEvents(); };
+                grid.appendChild(div);
+            }
+            document.getElementById('selectedDate').textContent = selectedDate.toLocaleDateString('de-DE');
+            renderDayEvents();
+        }
+
+        function renderDayEvents() {
+            const events = STORAGE.events().filter(e => new Date(e.start).toDateString() === selectedDate.toDateString()).sort((a,b) => new Date(a.start) - new Date(b.start));
+            const el = document.getElementById('dayEvents');
+            el.innerHTML = events.length ? events.map(e => `<div class="list-item"><div><strong>${e.title}</strong><br><small>${new Date(e.start).toLocaleTimeString('de-DE',{hour:2,minute:2})}</small></div><button class="del-btn" onclick="deleteEvent('${e.id}')">🗑</button></div>`).join('') : '<p class="empty-msg">Keine Termine</p>';
+        }
+
+        function openEventModal() {
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventStart').value = selectedDate.toISOString().slice(0,16);
+            document.getElementById('eventEnd').value = '';
+            document.getElementById('eventDesc').value = '';
+            document.getElementById('eventModal').classList.add('show');
+        }
+        function closeEventModal() { document.getElementById('eventModal').classList.remove('show'); }
+        function saveEvent() {
+            const events = STORAGE.events();
+            events.push({
+                id: Date.now().toString(),
+                title: document.getElementById('eventTitle').value,
+                start: document.getElementById('eventStart').value,
+                end: document.getElementById('eventEnd').value,
+                desc: document.getElementById('eventDesc').value
+            });
+            STORAGE.save('events', events);
+            closeEventModal();
+            renderCalendar();
+        }
+        function deleteEvent(id) {
+            STORAGE.save('events', STORAGE.events().filter(e => e.id !== id));
+            renderCalendar();
+        }
+
+        document.getElementById('calPrev').onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); };
+        document.getElementById('calNext').onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); };
+
+        // Aufgaben
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            if (!input.value.trim()) return;
+            const tasks = STORAGE.tasks();
+            tasks.push({
+                id: Date.now().toString(),
+                text: input.value.trim(),
+                date: document.getElementById('taskDate').value,
+                priority: document.getElementById('taskPriority').value,
+                done: false
+            });
+            STORAGE.save('tasks', tasks);
+            input.value = '';
+            renderTasks();
+        }
+        function toggleTask(id) {
+            const tasks = STORAGE.tasks().map(t => t.id === id ? {...t, done: !t.done} : t);
+            STORAGE.save('tasks', tasks);
+            renderTasks();
+        }
+        function deleteTask(id) {
+            STORAGE.save('tasks', STORAGE.tasks().filter(t => t.id !== id));
+            renderTasks();
+        }
+        function renderTasks() {
+            const tasks = STORAGE.tasks().sort((a,b) => (a.date||'').localeCompare(b.date||''));
+            document.getElementById('taskList').innerHTML = tasks.length ? tasks.map(t => `<div class="list-item ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')"><span>${t.text} ${t.date ? '('+t.date+')' : ''} <span class="badge">${t.priority}</span></span><button class="del-btn" onclick="deleteTask('${t.id}')">🗑</button></div>`).join('') : '<p class="empty-msg">Keine Aufgaben</p>';
+        }
+
+        // Essensplan
+        function openMealModal() {
+            document.getElementById('mealDate').value = new Date().toISOString().slice(0,10);
+            document.getElementById('mealDish').value = '';
+            document.getElementById('mealIngredients').value = '';
+            document.getElementById('mealModal').classList.add('show');
+        }
+        function closeMealModal() { document.getElementById('mealModal').classList.remove('show'); }
+        function saveMeal() {
+            const meals = STORAGE.meals();
+            meals.push({
+                id: Date.now().toString(),
+                date: document.getElementById('mealDate').value,
+                type: document.getElementById('mealType').value,
+                dish: document.getElementById('mealDish').value,
+                ingredients: document.getElementById('mealIngredients').value
+            });
+            STORAGE.save('meals', meals);
+            closeMealModal();
+            renderMeals();
+        }
+        function deleteMeal(id) {
+            STORAGE.save('meals', STORAGE.meals().filter(m => m.id !== id));
+            renderMeals();
+        }
+        function renderMeals() {
+            const meals = STORAGE.meals().sort((a,b) => a.date.localeCompare(b.date));
+            const byDate = {};
+            meals.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
+            document.getElementById('mealPlan').innerHTML = Object.keys(byDate).length ? Object.entries(byDate).map(([date, arr]) => `<div style="margin-bottom:1rem"><strong>${new Date(date).toLocaleDateString('de-DE')}</strong>${arr.map(m => `<div class="list-item"><div><span class="badge">${m.type}</span> ${m.dish}${m.ingredients?'<br><small>'+m.ingredients+'</small>':''}</div><button class="del-btn" onclick="deleteMeal('${m.id}')">🗑</button></div>`).join('')}</div>`).join('') : '<p class="empty-msg">Noch keine Gerichte geplant</p>';
+        }
+
+        // Budget
+        function addBudgetEntry() {
+            const type = document.getElementById('budgetType').value;
+            const amount = parseFloat(document.getElementById('budgetAmount').value);
+            if (!amount) return;
+            const entries = STORAGE.budget();
+            entries.push({
+                id: Date.now().toString(),
+                type, amount: type === 'income' ? amount : -amount,
+                desc: document.getElementById('budgetDesc').value,
+                date: document.getElementById('budgetDate').value,
+                category: document.getElementById('budgetCategory').value
+            });
+            STORAGE.save('budget', entries);
+            document.getElementById('budgetAmount').value = '';
+            document.getElementById('budgetDesc').value = '';
+            renderBudget();
+        }
+        function deleteBudget(id) {
+            STORAGE.save('budget', STORAGE.budget().filter(b => b.id !== id));
+            renderBudget();
+        }
+        function renderBudget() {
+            const entries = STORAGE.budget();
+            const income = entries.filter(e => e.amount > 0).reduce((s,e) => s + e.amount, 0);
+            const expense = entries.filter(e => e.amount < 0).reduce((s,e) => s + Math.abs(e.amount), 0);
+            document.getElementById('totalIncome').textContent = income.toFixed(2) + ' €';
+            document.getElementById('totalExpense').textContent = expense.toFixed(2) + ' €';
+            document.getElementById('balance').textContent = (income - expense).toFixed(2) + ' €';
+            document.getElementById('balance').style.color = income >= expense ? 'green' : 'red';
+            document.getElementById('budgetList').innerHTML = entries.sort((a,b) => b.date.localeCompare(a.date)).slice(0,20).map(e => `<div class="list-item"><div>${e.date} ${e.desc || e.category} <strong>${e.amount >= 0 ? '+' : ''}${e.amount.toFixed(2)} €</strong></div><button class="del-btn" onclick="deleteBudget('${e.id}')">🗑</button></div>`).join('') || '<p class="empty-msg">Keine Einträge</p>';
+        }
+
+        // Kontakte
+        function addContact() {
+            const name = document.getElementById('contactName').value.trim();
+            if (!name) return;
+            const contacts = STORAGE.contacts();
+            contacts.push({
+                id: Date.now().toString(),
+                name, phone: document.getElementById('contactPhone').value,
+                email: document.getElementById('contactEmail').value,
+                note: document.getElementById('contactNote').value
+            });
+            STORAGE.save('contacts', contacts);
+            document.getElementById('contactName').value = document.getElementById('contactPhone').value = document.getElementById('contactEmail').value = document.getElementById('contactNote').value = '';
+            renderContacts();
+        }
+        function deleteContact(id) {
+            STORAGE.save('contacts', STORAGE.contacts().filter(c => c.id !== id));
+            renderContacts();
+        }
+        function renderContacts() {
+            const contacts = STORAGE.contacts();
+            document.getElementById('contactList').innerHTML = contacts.length ? contacts.map(c => `<div class="list-item"><div><strong>${c.name}</strong>${c.phone?'<br><a href="tel:'+c.phone+'">'+c.phone+'</a>':''}${c.email?'<br><a href="mailto:'+c.email+'">'+c.email+'</a>':''}${c.note?'<br><small>'+c.note+'</small>':''}</div><button class="del-btn" onclick="deleteContact('${c.id}')">🗑</button></div>`).join('') : '<p class="empty-msg">Keine Kontakte</p>';
+        }
+
+        // Einkaufsliste
+        function addShoppingItem() {
+            const input = document.getElementById('shopInput');
+            if (!input.value.trim()) return;
+            const items = STORAGE.shopping();
+            items.push({
+                id: Date.now().toString(),
+                text: input.value.trim(),
+                category: document.getElementById('shopCategory').value,
+                done: false
+            });
+            STORAGE.save('shopping', items);
+            input.value = '';
+            renderShopping();
+        }
+        function toggleShop(id) {
+            const items = STORAGE.shopping().map(i => i.id === id ? {...i, done: !i.done} : i);
+            STORAGE.save('shopping', items);
+            renderShopping();
+        }
+        function deleteShop(id) {
+            STORAGE.save('shopping', STORAGE.shopping().filter(i => i.id !== id));
+            renderShopping();
+        }
+        function renderShopping() {
+            const items = STORAGE.shopping();
+            document.getElementById('shopList').innerHTML = items.length ? items.map(i => `<div class="list-item ${i.done?'done':''}"><input type="checkbox" ${i.done?'checked':''} onchange="toggleShop('${i.id}')"><span>${i.text} <span class="badge">${i.category}</span></span><button class="del-btn" onclick="deleteShop('${i.id}')">🗑</button></div>`).join('') : '<p class="empty-msg">Liste ist leer</p>';
+        }
+
+        // Urlaub
+        function addVacation() {
+            const dest = document.getElementById('vacDest').value.trim();
+            if (!dest) return;
+            const vacations = STORAGE.vacation();
+            vacations.push({
+                id: Date.now().toString(),
+                dest, start: document.getElementById('vacStart').value,
+                end: document.getElementById('vacEnd').value,
+                budget: document.getElementById('vacBudget').value,
+                notes: document.getElementById('vacNotes').value
+            });
+            STORAGE.save('vacation', vacations);
+            document.getElementById('vacDest').value = document.getElementById('vacStart').value = document.getElementById('vacEnd').value = document.getElementById('vacBudget').value = document.getElementById('vacNotes').value = '';
+            renderVacation();
+        }
+        function deleteVacation(id) {
+            STORAGE.save('vacation', STORAGE.vacation().filter(v => v.id !== id));
+            renderVacation();
+        }
+        function renderVacation() {
+            const vacs = STORAGE.vacation().sort((a,b) => (a.start||'').localeCompare(b.start||''));
+            document.getElementById('vacationList').innerHTML = vacs.length ? vacs.map(v => `<div class="card"><div class="list-item"><div><strong>${v.dest}</strong><br>${v.start && v.end ? new Date(v.start).toLocaleDateString('de-DE') + ' - ' + new Date(v.end).toLocaleDateString('de-DE') : ''}${v.budget ? '<br>Budget: '+v.budget+' €' : ''}${v.notes ? '<br><small>'+v.notes+'</small>':''}</div><button class="del-btn" onclick="deleteVacation('${v.id}')">🗑</button></div></div>`).join('') : '';
+        }
+
+        // Pinnwand
+        function addChatMsg() {
+            const author = document.getElementById('chatAuthor').value.trim();
+            const msg = document.getElementById('chatMsg').value.trim();
+            if (!author || !msg) return;
+            const msgs = STORAGE.chat();
+            msgs.push({ id: Date.now().toString(), author, msg, time: new Date().toISOString() });
+            STORAGE.save('chat', msgs);
+            document.getElementById('chatMsg').value = '';
+            renderChat();
+        }
+        function deleteChat(id) {
+            STORAGE.save('chat', STORAGE.chat().filter(m => m.id !== id));
+            renderChat();
+        }
+        function renderChat() {
+            const msgs = STORAGE.chat().reverse();
+            document.getElementById('chatList').innerHTML = msgs.length ? msgs.map(m => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="chat-msg" style="flex:1"><strong>${m.author}</strong> <time>${new Date(m.time).toLocaleString('de-DE')}</time><p style="margin-top:0.5rem">${m.msg}</p></div><button class="del-btn" onclick="deleteChat('${m.id}')">🗑</button></div></div>`).join('') : '<p class="empty-msg">Noch keine Nachrichten</p>';
+        }
+
+        // Geburtstage
+        function addBirthday() {
+            const name = document.getElementById('bdName').value.trim();
+            const date = document.getElementById('bdDate').value;
+            if (!name || !date) return;
+            const bds = STORAGE.birthdays();
+            bds.push({ id: Date.now().toString(), name, date });
+            STORAGE.save('birthdays', bds);
+            document.getElementById('bdName').value = document.getElementById('bdDate').value = '';
+            renderBirthdays();
+        }
+        function deleteBirthday(id) {
+            STORAGE.save('birthdays', STORAGE.birthdays().filter(b => b.id !== id));
+            renderBirthdays();
+        }
+        function renderBirthdays() {
+            const bds = STORAGE.birthdays().sort((a,b) => a.date.localeCompare(b.date));
+            const today = new Date().toISOString().slice(5,10);
+            document.getElementById('birthdayList').innerHTML = bds.length ? bds.map(b => {
+                const d = b.date.slice(5,10);
+                const isToday = d === today;
+                return `<div class="card ${isToday ? 'has-event' : ''}"><div class="list-item"><div><strong>${b.name}</strong> - ${new Date(b.date).toLocaleDateString('de-DE', {day:'numeric',month:'long'})} ${isToday ? '🎂 Heute!' : ''}</div><button class="del-btn" onclick="deleteBirthday('${b.id}')">🗑</button></div></div>`;
+            }).join('') : '';
+        }
+
+        renderAll();
+        document.getElementById('taskInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
+        document.getElementById('shopInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') addShoppingItem(); });
+    </script>
+</body>
+</html>

@@ -5,6 +5,8 @@ const urlsToCache = [
   './manifest.json',
   './naruto-simulator/',
   './naruto-simulator/index.html',
+  './familienplaner/',
+  './familienplaner/index.html',
   './icons/icon.svg'
 ];
 
