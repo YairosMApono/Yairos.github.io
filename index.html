@@ -468,6 +468,10 @@
     </div>
 
     <script>
+        // Bild-URL über Proxy (Fandom blockiert Hotlinking) - wsrv.nl umgeht das
+        function getImageUrl(url) {
+            return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=300&h=300&fit=cover';
+        }
         const CHARACTERS = [
             { name: "Naruto Uzumaki", village: "Konoha", ninjutsu: 5, taijutsu: 4, genjutsu: 1, intelligence: 3, strength: 4, speed: 5, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/7/7e/Naruto_Uzumaki.png" },
             { name: "Sasuke Uchiha", village: "Konoha", ninjutsu: 5, taijutsu: 5, genjutsu: 5, intelligence: 5, strength: 4, speed: 5, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/2/21/Sasuke_Part_1.png" },
@@ -534,8 +538,10 @@
             const classes = ['fight-card'];
             if (winner) classes.push('winner');
             if (loser) classes.push('loser');
+            const imgUrl = getImageUrl(char.image);
+            const fallback = 'https://via.placeholder.com/160/2d2d44/ff6b35?text=' + encodeURIComponent(char.name.charAt(0));
             return `<div class="${classes.join(' ')}">
-                <img src="${char.image}" alt="${char.name}" onerror="this.src='https://via.placeholder.com/160/2d2d44/ff6b35?text=${encodeURIComponent(char.name.charAt(0))}'">
+                <img src="${imgUrl}" alt="${char.name}" referrerpolicy="no-referrer" onerror="this.src='${fallback}'">
                 <div class="card-info">
                     <div class="card-name">${char.name}</div>
                     <div class="card-stats">${char.village} | Gesamt: ${totalStat}/35</div>
@@ -567,7 +573,7 @@
             fightCards.innerHTML = `${createCardHTML(c1)}<div class="vs-divider">VS</div>${createCardHTML(c2)}`;
             fightLoading.style.display = 'none';
             let progress = 0;
-            const duration = 6000;
+            const duration = 10000;
             const interval = 50;
             fightLoading.style.display = 'block';
             loadingBar.style.width = '0%';
@@ -611,7 +617,9 @@
         }
 
         function showWinner(champion) {
-            document.getElementById('championCard').innerHTML = `<img src="${champion.image}" alt="${champion.name}" onerror="this.src='https://via.placeholder.com/280/2d2d44/ff6b35?text=${encodeURIComponent(champion.name.charAt(0))}'"><div class="champion-info"><div class="champion-title">Shinobi Turnier Champion</div><div class="champion-name">${champion.name}</div><div class="char-detail">${champion.village} - Der stärkste Kämpfer!</div></div>`;
+            const champImg = getImageUrl(champion.image);
+            const champFallback = 'https://via.placeholder.com/280/2d2d44/ff6b35?text=' + encodeURIComponent(champion.name.charAt(0));
+            document.getElementById('championCard').innerHTML = `<img src="${champImg}" alt="${champion.name}" referrerpolicy="no-referrer" onerror="this.src='${champFallback}'"><div class="champion-info"><div class="champion-title">Shinobi Turnier Champion</div><div class="champion-name">${champion.name}</div><div class="char-detail">${champion.village} - Der stärkste Kämpfer!</div></div>`;
             showScreen('winnerScreen');
         }
 
