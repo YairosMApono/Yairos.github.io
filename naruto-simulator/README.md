@@ -2,6 +2,8 @@
 
 Ein visueller Kampf-Simulator mit zufälligen Kämpfern aus dem Naruto-Universum.
 
+**Live:** https://yairosmapono.github.io/
+
 ## Features
 
 - **K.O.-Turniersystem** mit 4, 8 oder 16 Kämpfern
