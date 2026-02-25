@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Naruto Kampf Simulator - Shinobi Turnier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ninja-orange: #ff6b35;
+            --ninja-red: #c41e3a;
+            --konoha-green: #2d5a27;
+            --dark-ninja: #1a1a2e;
+            --gold: #f4d03f;
+            --card-bg: linear-gradient(145deg, #2d2d44 0%, #1a1a2e 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--dark-ninja);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(255,107,53,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(196,30,58,0.1) 0%, transparent 50%);
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 1.5rem 0;
+            border-bottom: 3px solid var(--ninja-orange);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(244,208,63,0.5);
+        }
+
+        .subtitle {
+            color: #aaa;
+            margin-top: 0.5rem;
+            font-size: 1rem;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Start Screen */
+        .start-screen {
+            padding: 2rem 0;
+        }
+
+        .tournament-size-select {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .size-btn {
+            padding: 1rem 2rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            background: var(--card-bg);
+            border: 2px solid var(--ninja-orange);
+            color: var(--ninja-orange);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .size-btn:hover, .size-btn.selected {
+            background: var(--ninja-orange);
+            color: var(--dark-ninja);
+            transform: scale(1.05);
+        }
+
+        .start-btn {
+            display: block;
+            margin: 2rem auto;
+            padding: 1.2rem 3rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, var(--ninja-orange), var(--ninja-red));
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(255,107,53,0.4);
+            transition: all 0.3s;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 30px rgba(255,107,53,0.6);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Fight Arena */
+        .fight-arena {
+            padding: 1rem 0;
+        }
+
+        .fight-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .round-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+        }
+
+        .fight-cards-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            min-height: 350px;
+            padding: 1rem;
+        }
+
+        .fight-card {
+            width: 160px;
+            min-height: 280px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 2px solid rgba(255,107,53,0.5);
+            overflow: hidden;
+            position: relative;
+            transition: all 0.5s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .fight-card.winner {
+            border-color: var(--gold);
+            box-shadow: 0 0 30px rgba(244,208,63,0.5);
+            transform: scale(1.05);
+        }
+
+        .fight-card.loser {
+            opacity: 0.5;
+            filter: grayscale(0.8);
+        }
+
+        .fight-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            background: #333;
+        }
+
+        .fight-card .card-info {
+            padding: 0.8rem;
+        }
+
+        .fight-card .card-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--gold);
+            margin-bottom: 0.3rem;
+        }
+
+        .fight-card .card-stats {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        .vs-divider {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--ninja-orange);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        /* Fight Loading */
+        .fight-loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading-bar {
+            width: 100%;
+            max-width: 400px;
+            height: 12px;
+            background: #333;
+            border-radius: 6px;
+            margin: 1.5rem auto;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--ninja-orange), var(--ninja-red));
+            border-radius: 6px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .loading-text {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--gold);
+            margin-top: 1rem;
+        }
+
+        /* Tournament Bracket */
+        .bracket-container {
+            overflow-x: auto;
+            padding: 1rem 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .bracket {
+            display: flex;
+            gap: 2rem;
+            min-width: min-content;
+            padding: 1rem;
+        }
+
+        .bracket-round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            gap: 1rem;
+        }
+
+        .bracket-match {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,107,53,0.3);
+            border-radius: 8px;
+            padding: 0.5rem;
+            min-width: 140px;
+        }
+
+        .bracket-match .contestant {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+
+        .bracket-match .contestant.winner {
+            background: rgba(244,208,63,0.2);
+            color: var(--gold);
+        }
+
+        .bracket-match .contestant.pending {
+            color: #666;
+        }
+
+        .mobile-link-box {
+            background: var(--card-bg);
+            border: 2px solid var(--ninja-orange);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .mobile-link-box h3 {
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .mobile-link-box code {
+            display: block;
+            background: #1a1a2e;
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+
+        .round-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--ninja-orange);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Winner Screen */
+        .winner-screen {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .champion-card {
+            max-width: 280px;
+            margin: 2rem auto;
+            background: linear-gradient(145deg, #3d3d5c 0%, #2d2d44 100%);
+            border: 3px solid var(--gold);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(244,208,63,0.3);
+            animation: championGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes championGlow {
+            0%, 100% { box-shadow: 0 0 50px rgba(244,208,63,0.3); }
+            50% { box-shadow: 0 0 80px rgba(244,208,63,0.6); }
+        }
+
+        .champion-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .champion-info {
+            padding: 1.5rem;
+        }
+
+        .champion-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            color: var(--ninja-orange);
+            margin-bottom: 0.5rem;
+        }
+
+        .champion-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+        }
+
+        .new-tournament-btn {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            background: var(--ninja-orange);
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .new-tournament-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Character Info Tooltip */
+        .char-detail {
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 0.2rem;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 600px) {
+            .fight-cards-container {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .vs-divider {
+                transform: rotate(90deg);
+            }
+
+            .fight-card {
+                width: 140px;
+                min-height: 240px;
+            }
+
+            .fight-card img {
+                height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>⚔️ NARUTO KAMPF SIMULATOR</h1>
+            <p class="subtitle">Shinobi Turnier - Wer wird Hokage?</p>
+        </header>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen active start-screen">
+            <div class="mobile-link-box" id="mobileLinkBox">
+                <h3>📱 Mobil öffnen</h3>
+                <p>Scanne den QR-Code oder öffne diese URL auf deinem Handy (gleiches WLAN):</p>
+                <code id="mobileUrl">-</code>
+                <div id="qrCode"></div>
+            </div>
+            <h2 style="text-align: center; margin-bottom: 1rem;">Turniergröße wählen</h2>
+            <div class="tournament-size-select">
+                <button class="size-btn" data-size="4">4 Kämpfer</button>
+                <button class="size-btn" data-size="8">8 Kämpfer</button>
+                <button class="size-btn selected" data-size="16">16 Kämpfer</button>
+            </div>
+            <button id="startBtn" class="start-btn">TURNIER STARTEN</button>
+        </div>
+
+        <!-- Fight Screen -->
+        <div id="fightScreen" class="screen fight-arena">
+            <div class="fight-header">
+                <div class="round-label" id="roundLabel">Runde 1 - Kampf 1</div>
+                <button id="toggleBracketBtn" class="size-btn" style="margin-top: 0.5rem;">Turnierbaum anzeigen</button>
+            </div>
+            <div class="fight-cards-container" id="fightCards">
+                <!-- Cards injected by JS -->
+            </div>
+            <div class="fight-loading" id="fightLoading" style="display: none;">
+                <p>Kampf läuft...</p>
+                <div class="loading-bar">
+                    <div class="loading-bar-fill" id="loadingBar"></div>
+                </div>
+                <p class="loading-text" id="loadingText">0%</p>
+            </div>
+        </div>
+
+        <!-- Bracket Screen -->
+        <div id="bracketScreen" class="screen">
+            <h2 style="text-align: center; margin-bottom: 1rem;">Turnierbaum</h2>
+            <div class="bracket-container">
+                <div class="bracket" id="bracket">
+                    <!-- Bracket injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Winner Screen -->
+        <div id="winnerScreen" class="screen winner-screen">
+            <h2 style="color: var(--gold); margin-bottom: 1rem;">🏆 TURNIERSIEGER 🏆</h2>
+            <div class="champion-card" id="championCard">
+                <!-- Champion card injected by JS -->
+            </div>
+            <button class="new-tournament-btn" id="newTournamentBtn">Neues Turnier</button>
+        </div>
+    </div>
+
+    <script>
+        // Naruto Charaktere mit Stats (basierend auf Databook-Werten 1-5 + Lore)
+        const CHARACTERS = [
+            { name: "Naruto Uzumaki", village: "Konoha", ninjutsu: 5, taijutsu: 4, genjutsu: 1, intelligence: 3, strength: 4, speed: 5, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/7/7e/Naruto_Uzumaki.png" },
+            { name: "Sasuke Uchiha", village: "Konoha", ninjutsu: 5, taijutsu: 5, genjutsu: 5, intelligence: 5, strength: 4, speed: 5, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/2/21/Sasuke_Part_1.png" },
+            { name: "Kakashi Hatake", village: "Konoha", ninjutsu: 5, taijutsu: 5, genjutsu: 4, intelligence: 5, strength: 4, speed: 5, stamina: 3, image: "https://static.wikia.nocookie.net/naruto/images/2/27/Kakashi_Hatake.png" },
+            { name: "Itachi Uchiha", village: "Akatsuki", ninjutsu: 5, taijutsu: 5, genjutsu: 5, intelligence: 5, strength: 4, speed: 5, stamina: 2, image: "https://static.wikia.nocookie.net/naruto/images/4/4e/Itachi_Uchiha.png" },
+            { name: "Gaara", village: "Sunagakure", ninjutsu: 5, taijutsu: 3, genjutsu: 3, intelligence: 4, strength: 4, speed: 4, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/3/30/Gaara_Part_II.png" },
+            { name: "Rock Lee", village: "Konoha", ninjutsu: 1, taijutsu: 5, genjutsu: 1, intelligence: 2, strength: 5, speed: 5, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/4/44/Rock_Lee_Part_II.png" },
+            { name: "Might Guy", village: "Konoha", ninjutsu: 3, taijutsu: 5, genjutsu: 1, intelligence: 3, strength: 5, speed: 5, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/2/26/Might_Guy.png" },
+            { name: "Jiraiya", village: "Konoha", ninjutsu: 5, taijutsu: 5, genjutsu: 3, intelligence: 5, strength: 5, speed: 4, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/6/6a/Jiraiya.png" },
+            { name: "Tsunade", village: "Konoha", ninjutsu: 5, taijutsu: 5, genjutsu: 3, intelligence: 5, strength: 5, speed: 4, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/2/2c/Tsunade.png" },
+            { name: "Orochimaru", village: "Otogakure", ninjutsu: 5, taijutsu: 4, genjutsu: 5, intelligence: 5, strength: 4, speed: 5, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/b/be/Orochimaru_Part_III.png" },
+            { name: "Minato Namikaze", village: "Konoha", ninjutsu: 5, taijutsu: 5, genjutsu: 4, intelligence: 5, strength: 4, speed: 5, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/d/dd/Minato_Namikaze.png" },
+            { name: "Shikamaru Nara", village: "Konoha", ninjutsu: 4, taijutsu: 3, genjutsu: 3, intelligence: 5, strength: 2, speed: 3, stamina: 2, image: "https://static.wikia.nocookie.net/naruto/images/5/52/Shikamaru_Nara.png" },
+            { name: "Neji Hyuga", village: "Konoha", ninjutsu: 4, taijutsu: 5, genjutsu: 2, intelligence: 4, strength: 4, speed: 5, stamina: 3, image: "https://static.wikia.nocookie.net/naruto/images/9/9d/Neji_Hyuga.png" },
+            { name: "Hinata Hyuga", village: "Konoha", ninjutsu: 3, taijutsu: 4, genjutsu: 2, intelligence: 3, strength: 3, speed: 4, stamina: 3, image: "https://static.wikia.nocookie.net/naruto/images/2/22/Hinata_part_2.png" },
+            { name: "Kiba Inuzuka", village: "Konoha", ninjutsu: 3, taijutsu: 4, genjutsu: 2, intelligence: 2, strength: 4, speed: 4, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/5/5a/Kiba_Inuzuka.png" },
+            { name: "Shino Aburame", village: "Konoha", ninjutsu: 4, taijutsu: 3, genjutsu: 3, intelligence: 4, strength: 3, speed: 3, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/4/4d/Shino_Aburame.png" },
+            { name: "Temari", village: "Sunagakure", ninjutsu: 4, taijutsu: 3, genjutsu: 3, intelligence: 4, strength: 3, speed: 4, stamina: 3, image: "https://static.wikia.nocookie.net/naruto/images/6/6f/Temari.png" },
+            { name: "Kankuro", village: "Sunagakure", ninjutsu: 4, taijutsu: 3, genjutsu: 3, intelligence: 4, strength: 3, speed: 3, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/0/0d/Kankuro.png" },
+            { name: "Zabuza Momochi", village: "Kirigakure", ninjutsu: 5, taijutsu: 5, genjutsu: 4, intelligence: 4, strength: 5, speed: 5, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/5/50/Zabuza_Momochi.png" },
+            { name: "Haku", village: "Kirigakure", ninjutsu: 4, taijutsu: 4, genjutsu: 3, intelligence: 4, strength: 3, speed: 5, stamina: 3, image: "https://static.wikia.nocookie.net/naruto/images/c/cc/Haku.png" },
+            { name: "Deidara", village: "Akatsuki", ninjutsu: 5, taijutsu: 3, genjutsu: 2, intelligence: 4, strength: 3, speed: 4, stamina: 4, image: "https://static.wikia.nocookie.net/naruto/images/4/4e/Deidara.png" },
+            { name: "Sasori", village: "Akatsuki", ninjutsu: 5, taijutsu: 4, genjutsu: 4, intelligence: 5, strength: 3, speed: 4, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/5/5e/Sasori.png" },
+            { name: "Kisame Hoshigaki", village: "Akatsuki", ninjutsu: 5, taijutsu: 5, genjutsu: 2, intelligence: 4, strength: 5, speed: 4, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/5/53/Kisame_Hoshigaki.png" },
+            { name: "Pain (Nagato)", village: "Amegakure", ninjutsu: 5, taijutsu: 4, genjutsu: 5, intelligence: 5, strength: 4, speed: 5, stamina: 5, image: "https://static.wikia.nocookie.net/naruto/images/0/01/Deva_Path.png" },
+        ];
+
+        // State
+        let tournamentSize = 16;
+        let participants = [];
+        let currentRound = [];
+        let roundNumber = 1;
+        let matchIndex = 0;
+        let bracketData = [];
+
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const fightScreen = document.getElementById('fightScreen');
+        const bracketScreen = document.getElementById('bracketScreen');
+        const winnerScreen = document.getElementById('winnerScreen');
+        const fightCards = document.getElementById('fightCards');
+        const fightLoading = document.getElementById('fightLoading');
+        const loadingBar = document.getElementById('loadingBar');
+        const loadingText = document.getElementById('loadingText');
+        const roundLabel = document.getElementById('roundLabel');
+
+        // Shuffle and pick participants
+        function getRandomParticipants(size) {
+            const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, size);
+        }
+
+        // Calculate power score with luck factor (spannender durch Zufall)
+        function calculatePower(char) {
+            const base = (char.ninjutsu + char.taijutsu + char.genjutsu + char.intelligence + 
+                        char.strength + char.speed + char.stamina) / 7;
+            const luck = (Math.random() - 0.5) * 1.5; // ±0.75 Glücksfaktor
+            const matchupBonus = Math.random() * 0.5; // Zufälliger Matchup-Vorteil
+            const critChance = Math.random(); // 5% Chance auf "Kritischer Treffer"
+            const critBonus = critChance > 0.95 ? 1.0 : 0;
+            return Math.max(0.5, Math.min(5, base + luck + matchupBonus + critBonus));
+        }
+
+        // Determine winner
+        function determineWinner(char1, char2) {
+            const power1 = calculatePower(char1);
+            const power2 = calculatePower(char2);
+            return power1 >= power2 ? char1 : char2;
+        }
+
+        // Create fight card HTML
+        function createCardHTML(char, winner = false, loser = false) {
+            const totalStat = char.ninjutsu + char.taijutsu + char.genjutsu + char.intelligence + 
+                           char.strength + char.speed + char.stamina;
+            const classes = ['fight-card'];
+            if (winner) classes.push('winner');
+            if (loser) classes.push('loser');
+            return `
+                <div class="${classes.join(' ')}">
+                    <img src="${char.image}" alt="${char.name}" onerror="this.src='https://via.placeholder.com/160/2d2d44/ff6b35?text=${encodeURIComponent(char.name.charAt(0))}'">
+                    <div class="card-info">
+                        <div class="card-name">${char.name}</div>
+                        <div class="card-stats">${char.village} | Gesamt: ${totalStat}/35</div>
+                        <div class="char-detail">Nin:${char.ninjutsu} Tai:${char.taijutsu} Gen:${char.genjutsu}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Start tournament
+        function startTournament() {
+            participants = getRandomParticipants(tournamentSize);
+            currentRound = [...participants];
+            roundNumber = 1;
+            matchIndex = 0;
+            bracketData = [{ round: 1, matches: [] }];
+            
+            for (let i = 0; i < currentRound.length; i += 2) {
+                bracketData[0].matches.push({
+                    c1: currentRound[i],
+                    c2: currentRound[i + 1],
+                    winner: null
+                });
+            }
+            renderBracket();
+            
+            showScreen('fightScreen');
+            runNextFight();
+        }
+
+        // Run single fight
+        function runNextFight() {
+            const matchNum = Math.floor(matchIndex / 2) + 1;
+            const totalMatches = currentRound.length / 2;
+            roundLabel.textContent = `Runde ${roundNumber} - Kampf ${matchNum}/${totalMatches}`;
+
+            const c1 = currentRound[matchIndex];
+            const c2 = currentRound[matchIndex + 1];
+
+            fightCards.innerHTML = `
+                ${createCardHTML(c1)}
+                <div class="vs-divider">VS</div>
+                ${createCardHTML(c2)}
+            `;
+            fightLoading.style.display = 'none';
+
+            // 6 second fight animation
+            let progress = 0;
+            const duration = 6000;
+            const interval = 50;
+
+            fightLoading.style.display = 'block';
+            loadingBar.style.width = '0%';
+            loadingText.textContent = '0%';
+
+            const timer = setInterval(() => {
+                progress += interval;
+                const pct = Math.min(100, (progress / duration) * 100);
+                loadingBar.style.width = pct + '%';
+                loadingText.textContent = Math.floor(pct) + '%';
+
+                if (progress >= duration) {
+                    clearInterval(timer);
+                    const winner = determineWinner(c1, c2);
+                    const loser = winner === c1 ? c2 : c1;
+
+                    fightCards.innerHTML = `
+                        ${createCardHTML(c1, winner === c1, winner === c2)}
+                        <div class="vs-divider">⚔️</div>
+                        ${createCardHTML(c2, winner === c2, winner === c1)}
+                    `;
+                    fightLoading.style.display = 'none';
+
+                    // Update bracket
+                    const roundIdx = roundNumber - 1;
+                    if (!bracketData[roundIdx]) bracketData[roundIdx] = { round: roundNumber, matches: [] };
+                    const matchIdx = Math.floor(matchIndex / 2);
+                    if (bracketData[roundIdx].matches[matchIdx]) {
+                        bracketData[roundIdx].matches[matchIdx].winner = winner;
+                    }
+                    renderBracket();
+
+                    // Advance to next match or round
+                    const nextIndex = matchIndex + 2;
+                    if (nextIndex >= currentRound.length) {
+                        // Round complete - advance winners
+                        const winners = [];
+                        for (let i = 0; i < currentRound.length; i += 2) {
+                            const m = bracketData[roundNumber - 1].matches[Math.floor(i/2)];
+                            if (m && m.winner) winners.push(m.winner);
+                        }
+                        currentRound = winners;
+                        matchIndex = 0;
+                        roundNumber++;
+
+                        if (currentRound.length === 1) {
+                            setTimeout(() => showWinner(currentRound[0]), 2000);
+                        } else {
+                            bracketData.push({ round: roundNumber, matches: [] });
+                            for (let i = 0; i < currentRound.length; i += 2) {
+                                bracketData[roundNumber - 1].matches.push({
+                                    c1: currentRound[i],
+                                    c2: currentRound[i + 1],
+                                    winner: null
+                                });
+                            }
+                            setTimeout(runNextFight, 2500);
+                        }
+                    } else {
+                        matchIndex = nextIndex;
+                        setTimeout(runNextFight, 2500);
+                    }
+                }
+            }, interval);
+        }
+
+        function showWinner(champion) {
+            document.getElementById('championCard').innerHTML = `
+                <img src="${champion.image}" alt="${champion.name}" onerror="this.src='https://via.placeholder.com/280/2d2d44/ff6b35?text=${encodeURIComponent(champion.name.charAt(0))}'">
+                <div class="champion-info">
+                    <div class="champion-title">Shinobi Turnier Champion</div>
+                    <div class="champion-name">${champion.name}</div>
+                    <div class="char-detail">${champion.village} - Der stärkste Kämpfer!</div>
+                </div>
+            `;
+            showScreen('winnerScreen');
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Render bracket
+        function renderBracket() {
+            const bracketEl = document.getElementById('bracket');
+            let html = '';
+            bracketData.forEach(roundData => {
+                html += `<div class="bracket-round"><div class="round-title">Runde ${roundData.round}</div>`;
+                roundData.matches.forEach(m => {
+                    html += `<div class="bracket-match">
+                        <div class="contestant ${m.winner === m.c1 ? 'winner' : 'pending'}">${m.c1?.name || '?'}</div>
+                        <div class="contestant ${m.winner === m.c2 ? 'winner' : 'pending'}">${m.c2?.name || '?'}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            });
+            bracketEl.innerHTML = html || '<p>Turnierbaum wird geladen...</p>';
+        }
+
+        // Event Listeners
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                tournamentSize = parseInt(btn.dataset.size);
+            });
+        });
+
+        document.getElementById('startBtn').addEventListener('click', startTournament);
+        document.getElementById('newTournamentBtn').addEventListener('click', () => {
+            showScreen('startScreen');
+        });
+
+        // Mobile URL anzeigen (QR-Code via API)
+        const currentUrl = window.location.href;
+        document.getElementById('mobileUrl').textContent = currentUrl;
+        if (currentUrl.includes('://') && !currentUrl.includes('file://')) {
+            document.getElementById('qrCode').innerHTML = 
+                '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + 
+                encodeURIComponent(currentUrl) + '" alt="QR Code" style="margin-top:0.5rem;border-radius:8px;">';
+        }
+
+        document.getElementById('toggleBracketBtn').addEventListener('click', () => {
+            renderBracket();
+            if (fightScreen.classList.contains('active')) {
+                bracketScreen.classList.add('active');
+                fightScreen.classList.remove('active');
+                document.getElementById('toggleBracketBtn').textContent = 'Zurück zum Kampf';
+            } else {
+                fightScreen.classList.add('active');
+                bracketScreen.classList.remove('active');
+                document.getElementById('toggleBracketBtn').textContent = 'Turnierbaum anzeigen';
+            }
+        });
+    </script>
+</body>
+</html>
