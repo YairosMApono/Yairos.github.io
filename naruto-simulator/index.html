@@ -2,8 +2,10 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Naruto Kampf Simulator - Shinobi Turnier</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,23 +21,24 @@
             --card-bg: linear-gradient(145deg, #2d2d44 0%, #1a1a2e 100%);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Rajdhani', sans-serif; background: var(--dark-ninja); color: #fff; min-height: 100vh; overflow-x: hidden; background-image: radial-gradient(ellipse at 20% 20%, rgba(255,107,53,0.1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(196,30,58,0.1) 0%, transparent 50%); }
-        .app-container { max-width: 1200px; margin: 0 auto; padding: 1rem; min-height: 100vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
+        body { font-family: 'Rajdhani', sans-serif; background: var(--dark-ninja); color: #fff; min-height: 100vh; min-height: 100dvh; overflow-x: hidden; background-image: radial-gradient(ellipse at 20% 20%, rgba(255,107,53,0.1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(196,30,58,0.1) 0%, transparent 50%); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+        .app-container { max-width: 1200px; margin: 0 auto; padding: max(1rem, env(safe-area-inset-left)); min-height: 100vh; }
         header { text-align: center; padding: 1.5rem 0; border-bottom: 3px solid var(--ninja-orange); }
         h1 { font-family: 'Orbitron', sans-serif; font-size: clamp(1.5rem, 5vw, 2.5rem); color: var(--gold); text-shadow: 0 0 20px rgba(244,208,63,0.5); }
         .subtitle { color: #aaa; margin-top: 0.5rem; font-size: 1rem; }
-        .back-link { display: inline-block; margin: 0.5rem 0; color: var(--ninja-orange); text-decoration: none; font-size: 0.9rem; }
-        .back-link:hover { text-decoration: underline; }
+        .back-link { display: inline-block; margin: 0.5rem 0; padding: 0.75rem 1rem; min-height: 44px; color: var(--ninja-orange); text-decoration: none; font-size: 1rem; touch-action: manipulation; -webkit-touch-callout: none; }
+        .back-link:hover, .back-link:active { text-decoration: underline; }
         .screen { display: none; animation: fadeIn 0.5s ease; }
         .screen.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .start-screen { padding: 2rem 0; }
         .tournament-size-select { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; }
-        .size-btn { padding: 1rem 2rem; font-family: 'Orbitron', sans-serif; font-size: 1rem; background: var(--card-bg); border: 2px solid var(--ninja-orange); color: var(--ninja-orange); cursor: pointer; border-radius: 8px; transition: all 0.3s; }
-        .size-btn:hover, .size-btn.selected { background: var(--ninja-orange); color: var(--dark-ninja); transform: scale(1.05); }
-        .start-btn { display: block; margin: 2rem auto; padding: 1.2rem 3rem; font-family: 'Orbitron', sans-serif; font-size: 1.3rem; background: linear-gradient(135deg, var(--ninja-orange), var(--ninja-red)); border: none; color: white; cursor: pointer; border-radius: 12px; box-shadow: 0 4px 20px rgba(255,107,53,0.4); transition: all 0.3s; }
-        .start-btn:hover { transform: scale(1.05); box-shadow: 0 6px 30px rgba(255,107,53,0.6); }
+        .size-btn { padding: 1rem 2rem; min-height: 48px; min-width: 120px; font-family: 'Orbitron', sans-serif; font-size: 1rem; background: var(--card-bg); border: 2px solid var(--ninja-orange); color: var(--ninja-orange); cursor: pointer; border-radius: 12px; transition: all 0.3s; touch-action: manipulation; }
+        .size-btn:hover, .size-btn:active, .size-btn.selected { background: var(--ninja-orange); color: var(--dark-ninja); transform: scale(1.02); }
+        .start-btn { display: block; margin: 2rem auto; padding: 1.2rem 3rem; min-height: 52px; font-family: 'Orbitron', sans-serif; font-size: 1.2rem; background: linear-gradient(135deg, var(--ninja-orange), var(--ninja-red)); border: none; color: white; cursor: pointer; border-radius: 14px; box-shadow: 0 4px 20px rgba(255,107,53,0.4); transition: all 0.3s; touch-action: manipulation; }
+        .start-btn:hover, .start-btn:active { transform: scale(1.02); box-shadow: 0 6px 30px rgba(255,107,53,0.6); }
         .fight-arena { padding: 1rem 0; }
         .fight-header { text-align: center; margin-bottom: 1.5rem; }
         .round-label { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; color: var(--gold); }
@@ -68,10 +71,22 @@
         .champion-info { padding: 1.5rem; }
         .champion-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; color: var(--ninja-orange); margin-bottom: 0.5rem; }
         .champion-name { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; color: var(--gold); }
-        .new-tournament-btn { margin-top: 2rem; padding: 1rem 2rem; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; background: var(--ninja-orange); border: none; color: white; cursor: pointer; border-radius: 12px; transition: all 0.3s; }
-        .new-tournament-btn:hover { transform: scale(1.05); }
+        .new-tournament-btn { margin-top: 2rem; padding: 1rem 2rem; min-height: 48px; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; background: var(--ninja-orange); border: none; color: white; cursor: pointer; border-radius: 14px; transition: all 0.3s; touch-action: manipulation; }
+        .new-tournament-btn:hover, .new-tournament-btn:active { transform: scale(1.02); }
         .char-detail { font-size: 0.7rem; color: #888; margin-top: 0.2rem; }
-        @media (max-width: 600px) { .fight-cards-container { flex-direction: column; gap: 0.5rem; } .vs-divider { transform: rotate(90deg); } .fight-card { width: 140px; min-height: 240px; } .fight-card img { height: 120px; } }
+        @media (max-width: 600px) {
+            .fight-cards-container { flex-direction: column; gap: 1rem; padding: 1rem 0; min-height: 300px; }
+            .vs-divider { transform: rotate(90deg); }
+            .fight-card { width: min(160px, 45vw); min-height: 260px; }
+            .fight-card img { height: 130px; }
+            .tournament-size-select { gap: 0.75rem; }
+            .size-btn { min-width: 100px; padding: 0.9rem 1.2rem; }
+            .start-btn { width: 100%; max-width: 320px; margin: 1.5rem auto; }
+        }
+        @media (max-width: 380px) {
+            .app-container { padding: 0.75rem; }
+            .fight-card { width: 85vw; max-width: 160px; }
+        }
     </style>
 </head>
 <body>
@@ -155,6 +170,7 @@
         document.getElementById('startBtn').addEventListener('click', startTournament);
         document.getElementById('newTournamentBtn').addEventListener('click', () => showScreen('startScreen'));
         document.getElementById('toggleBracketBtn').addEventListener('click', () => { renderBracket(); if (fightScreen.classList.contains('active')) { bracketScreen.classList.add('active'); fightScreen.classList.remove('active'); document.getElementById('toggleBracketBtn').textContent = 'Zurück zum Kampf'; } else { fightScreen.classList.add('active'); bracketScreen.classList.remove('active'); document.getElementById('toggleBracketBtn').textContent = 'Turnierbaum anzeigen'; } });
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js', { scope: '../' }).catch(() => {});
     </script>
 </body>
 </html>

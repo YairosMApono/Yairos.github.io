@@ -2,10 +2,15 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-title" content="App Dashboard">
     <title>App Dashboard - Mini Apps & Spiele</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -21,22 +26,31 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { -webkit-tap-highlight-color: transparent; }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            overscroll-behavior: none;
+        }
 
         body {
             font-family: 'Outfit', sans-serif;
             background: var(--bg-dark);
             color: var(--text);
             min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
             background-image: 
                 radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
                 radial-gradient(ellipse 60% 40% at 100% 100%, rgba(139, 92, 246, 0.1), transparent);
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         .dashboard {
             max-width: 1100px;
             margin: 0 auto;
-            padding: 2rem 1.5rem;
+            padding: max(2rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
             min-height: 100vh;
         }
 
@@ -78,10 +92,13 @@
             background: var(--bg-card);
             border: 1px solid var(--card-border);
             border-radius: 20px;
-            padding: 2rem;
+            padding: max(2rem, 1.5rem);
+            min-height: 140px;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
         }
 
         .app-card::before {
@@ -96,7 +113,8 @@
             transition: opacity 0.3s;
         }
 
-        .app-card:hover {
+        .app-card:hover,
+        .app-card:active {
             transform: translateY(-4px);
             border-color: rgba(99, 102, 241, 0.4);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -119,6 +137,8 @@
         .app-icon {
             width: 56px;
             height: 56px;
+            min-width: 56px;
+            min-height: 56px;
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -192,6 +212,21 @@
         @media (max-width: 600px) {
             .apps-grid {
                 grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .app-card {
+                padding: 1.5rem;
+                min-height: 120px;
+            }
+            .mobile-link-box {
+                padding: 1rem;
+                margin: 1.5rem auto;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .dashboard {
+                padding: 1rem;
             }
         }
     </style>
@@ -234,12 +269,15 @@
     </div>
 
     <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+        }
         const currentUrl = window.location.href;
         document.getElementById('mobileUrl').textContent = currentUrl;
         if (currentUrl.includes('://') && !currentUrl.includes('file://')) {
             document.getElementById('qrCode').innerHTML = 
                 '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + 
-                encodeURIComponent(currentUrl) + '" alt="QR Code">';
+                encodeURIComponent(currentUrl) + '" alt="QR Code" loading="lazy">';
         }
     </script>
 </body>
