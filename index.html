@@ -40,8 +40,10 @@
             --border-active: rgba(201,162,39,0.6);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { -webkit-text-size-adjust: 100%; }
         body {
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
             font-family: 'Crimson Text', serif;
             background: linear-gradient(135deg, #0d2818 0%, #1a472a 40%, #0f3d20 100%);
             color: var(--parchment);
@@ -383,10 +385,62 @@
         }
         .info-panel h3 { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--gold); margin-bottom: var(--space-xs); }
 
+        /* Help Button - Rundes Fragezeichen */
+        .help-btn {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: var(--gold-dim);
+            border: 2px solid var(--border);
+            color: var(--gold-light);
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 4px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .help-btn:hover { background: rgba(201,162,39,0.3); border-color: var(--gold); }
+        .section-header { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: var(--space-md); flex-wrap: wrap; }
+
+        /* Help Modal */
+        .help-modal .modal-content { max-width: 360px; }
+        .help-modal .help-text { font-size: 0.9rem; line-height: 1.5; white-space: pre-line; }
+
+        /* Mobile - Alles im Bildschirm */
         @media (max-width: 600px) {
-            .village-layout { grid-template-columns: repeat(2, 1fr); }
-            .resource-fields { grid-template-columns: repeat(3, 1fr); }
-            .resource { min-width: 110px; }
+            .game-container { padding: var(--space-xs); }
+            .game-header { padding: var(--space-sm); }
+            .game-header h1 { font-size: 1.3rem; }
+            .resource-bar { padding: var(--space-sm); gap: var(--space-xs); }
+            .resource { min-width: 0; flex: 1 1 70px; padding: var(--space-xs); }
+            .resource-value { font-size: 0.95rem; }
+            .resource-storage { font-size: 0.65rem; }
+            .tabs { gap: 2px; margin-bottom: var(--space-sm); }
+            .tab { padding: var(--space-xs) var(--space-sm); font-size: 0.8rem; }
+            .map-container { padding: var(--space-sm); border-radius: var(--radius-lg); }
+            .section-title { font-size: 1rem; margin-bottom: var(--space-sm); }
+            .section-subtitle { font-size: 0.85rem; margin-bottom: var(--space-sm); }
+            .map-grid { max-width: 100%; gap: 2px; }
+            .map-tile.village::after { font-size: 1.4rem; }
+            .map-tile.empty::after { font-size: 1rem; }
+            .village-layout { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
+            .building-slot { min-height: 90px; padding: var(--space-xs); }
+            .building-slot .icon { font-size: 1.8rem; }
+            .building-slot .name { font-size: 0.7rem; }
+            .resource-fields { grid-template-columns: repeat(3, 1fr); gap: var(--space-xs); margin-bottom: var(--space-md); }
+            .field .icon { font-size: 1.4rem; }
+            .field .name { font-size: 0.65rem; }
+            .troops-grid { grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+            .troop-card { padding: var(--space-sm); }
+            .troop-card .icon { font-size: 1.8rem; }
+            .report-list { max-height: 50vh; }
+            .info-panel { padding: var(--space-sm); margin-top: var(--space-sm); }
+        }
+        @media (max-width: 380px) {
+            .resource { flex: 1 1 65px; }
+            .tab { font-size: 0.75rem; padding: 6px 8px; }
         }
     </style>
 </head>
@@ -399,11 +453,12 @@
         </header>
 
         <div class="resource-bar">
+            <button class="help-btn" style="align-self:center" onclick="showHelp('resources')">?</button>
             <div class="resource"><span class="resource-icon">🪵</span><div><span class="resource-value" id="resWood">0</span><div class="resource-rate" id="rateWood">+0/h</div><div class="resource-storage" id="storeWood"></div></div></div>
             <div class="resource"><span class="resource-icon">🧱</span><div><span class="resource-value" id="resClay">0</span><div class="resource-rate" id="rateClay">+0/h</div><div class="resource-storage" id="storeClay"></div></div></div>
             <div class="resource"><span class="resource-icon">⚙️</span><div><span class="resource-value" id="resIron">0</span><div class="resource-rate" id="rateIron">+0/h</div><div class="resource-storage" id="storeIron"></div></div></div>
             <div class="resource"><span class="resource-icon">🌾</span><div><span class="resource-value" id="resCrop">0</span><div class="resource-rate" id="rateCrop">+0/h</div><div class="resource-storage" id="storeCrop"></div></div></div>
-            <div class="resource" style="margin-left:auto"><span class="resource-icon">⏱️</span><div><span class="resource-value" id="gameTime">Tag 1</span></div></div>
+            <div class="resource" style="margin-left:auto;flex-shrink:0"><span class="resource-icon">⏱️</span><div><span class="resource-value" id="gameTime">Tag 1</span></div></div>
         </div>
 
         <div class="tabs">
@@ -417,7 +472,7 @@
 
         <div id="mapTab" class="village-view active">
             <div class="map-container">
-                <h3 class="section-title">Weltkarte</h3>
+                <div class="section-header"><h3 class="section-title">Weltkarte</h3><button class="help-btn" onclick="showHelp('map')">?</button></div>
                 <div class="map-grid" id="mapGrid"></div>
                 <div class="info-panel">
                     <h3>ℹ️ Hinweis</h3>
@@ -428,17 +483,17 @@
 
         <div id="villageTab" class="village-view">
             <div class="map-container">
-                <h3 class="section-title">Dorfzentrum</h3>
+                <div class="section-header"><h3 class="section-title">Dorfzentrum</h3><button class="help-btn" onclick="showHelp('village')">?</button></div>
                 <p class="section-subtitle">Klicke auf ein Gebäude oder Feld zum Ausbauen</p>
                 <div class="village-layout" id="villageLayout"></div>
-                <h3 class="section-title">Rohstofffelder</h3>
+                <div class="section-header"><h3 class="section-title">Rohstofffelder</h3><button class="help-btn" onclick="showHelp('fields')">?</button></div>
                 <div class="resource-fields" id="resourceFields"></div>
             </div>
         </div>
 
         <div id="troopsTab" class="village-view">
             <div class="map-container">
-                <h3 class="section-title">Kaserne</h3>
+                <div class="section-header"><h3 class="section-title">Kaserne</h3><button class="help-btn" onclick="showHelp('troops')">?</button></div>
                 <p class="section-subtitle">Rekrutiere Truppen – verbrauchen Getreide pro Stunde</p>
                 <div class="troops-grid" id="troopsGrid"></div>
             </div>
@@ -446,15 +501,25 @@
 
         <div id="reportsTab" class="village-view">
             <div class="map-container">
-                <h3 class="section-title">Berichte</h3>
+                <div class="section-header"><h3 class="section-title">Berichte</h3><button class="help-btn" onclick="showHelp('reports')">?</button></div>
                 <div class="report-list" id="reportList"></div>
             </div>
         </div>
     </div>
 
+    <div id="helpModal" class="modal help-modal" style="z-index:1001">
+        <div class="modal-content">
+            <h2 id="helpTitle">Hilfe</h2>
+            <p class="help-text" id="helpText"></p>
+            <div class="modal-actions"><button class="btn" onclick="document.getElementById('helpModal').classList.remove('show')">Schließen</button></div>
+        </div>
+    </div>
     <div id="buildingModal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Gebäude</h2>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.5rem">
+                <h2 id="modalTitle">Gebäude</h2>
+                <button class="help-btn" id="modalHelpBtn" onclick="showModalHelp()" style="display:none">?</button>
+            </div>
             <p class="desc" id="modalDesc"></p>
             <div class="costs" id="modalCosts"></div>
             <div class="time" id="modalTime"></div>
@@ -476,19 +541,19 @@
            ═══════════════════════════════════════════════════════════════ */
 
         const BUILDINGS = {
-            main: { name: 'Hauptgebäude', icon: '🏛️', desc: 'Reduziert Bau- und Rekrutierungszeiten um 5% pro Stufe.', base: { w: 70, c: 40, i: 60, r: 20 }, time: 8000 },
-            barracks: { name: 'Kaserne', icon: '⚔️', desc: 'Rekrutiere Infanterie. Höhere Stufe = schnellere Rekrutierung.', base: { w: 175, c: 160, i: 80, r: 80 }, time: 12000 },
-            warehouse: { name: 'Lagerhaus', icon: '📦', desc: 'Speichert Holz, Lehm und Eisen. +2500 Kapazität pro Stufe.', base: { w: 130, c: 160, i: 90, r: 40 }, time: 10000 },
-            granary: { name: 'Getreidespeicher', icon: '🌾', desc: 'Speichert Getreide. +2000 Kapazität pro Stufe.', base: { w: 80, c: 100, i: 70, r: 20 }, time: 8000 },
-            wall: { name: 'Stadtmauer', icon: '🧱', desc: 'Verteidigungsbonus für dein Dorf.', base: { w: 70, c: 90, i: 170, r: 70 }, time: 10000 },
-            rally: { name: 'Versammlungsplatz', icon: '🏕️', desc: 'Erlaubt das Aussenden von Truppen. Ermöglicht 2. Bau-Queue.', base: { w: 110, c: 160, i: 90, r: 70 }, time: 11000 },
+            main: { name: 'Hauptgebäude', icon: '🏛️', desc: 'Reduziert Bau- und Rekrutierungszeiten um 5% pro Stufe. Ohne Voraussetzungen.', base: { w: 70, c: 40, i: 60, r: 20 }, time: 8000, help: 'Zentrum des Dorfes. Jede Stufe verkürzt alle Bau- und Rekrutierungszeiten um 5%. Sollte zuerst ausgebaut werden.' },
+            barracks: { name: 'Kaserne', icon: '⚔️', desc: 'Rekrutiere Infanterie. +10% Rekrutierungsgeschwindigkeit pro Stufe. Voraussetzung: Hauptgebäude St.1', base: { w: 175, c: 160, i: 80, r: 80 }, time: 12000, help: 'Trainiert Miliz, Schwertkämpfer, Speerträger und Axtkämpfer. Höhere Kaserne = schnellere Rekrutierung.' },
+            warehouse: { name: 'Lagerhaus', icon: '📦', desc: 'Speichert Holz, Lehm, Eisen. +2500 pro Stufe. Voraussetzung: Hauptgebäude St.1', base: { w: 130, c: 160, i: 90, r: 40 }, time: 10000, help: 'Erhöht die maximale Menge an Holz, Lehm und Eisen. Ohne Ausbau kannst du keine großen Bauprojekte starten.' },
+            granary: { name: 'Getreidespeicher', icon: '🌾', desc: 'Speichert Getreide. +2000 pro Stufe. Voraussetzung: Hauptgebäude St.1', base: { w: 80, c: 100, i: 70, r: 20 }, time: 8000, help: 'Erhöht die maximale Getreide-Menge. Wichtig für Truppen-Rekrutierung.' },
+            wall: { name: 'Stadtmauer', icon: '🧱', desc: 'Verteidigungsbonus. Voraussetzung: Hauptgebäude St.3, Versammlungsplatz St.1', base: { w: 70, c: 90, i: 170, r: 70 }, time: 10000, help: 'Schützt dein Dorf. Benötigt Versammlungsplatz (für Koordination der Verteidiger).' },
+            rally: { name: 'Versammlungsplatz', icon: '🏕️', desc: 'Ermöglicht 2. Bau-Queue. Voraussetzung: Hauptgebäude St.1, Kaserne St.1', base: { w: 110, c: 160, i: 90, r: 70 }, time: 11000, help: 'Mit Versammlungsplatz kannst du 2 Gebäude/Felder/Truppen gleichzeitig bauen oder rekrutieren.' },
         };
 
         const FIELDS = [
-            { type: 'wood', name: 'Holzfäller', icon: '🪵', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22 },
-            { type: 'clay', name: 'Lehmgrube', icon: '🧱', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22 },
-            { type: 'iron', name: 'Eisenmine', icon: '⚙️', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22 },
-            { type: 'crop', name: 'Acker', icon: '🌾', base: { w: 50, c: 60, i: 40, r: 80 }, prodBase: 20, prodFactor: 1.25 },
+            { type: 'wood', name: 'Holzfäller', icon: '🪵', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22, help: 'Produziert Holz. Wird für fast alle Gebäude und Truppen benötigt.' },
+            { type: 'clay', name: 'Lehmgrube', icon: '🧱', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22, help: 'Produziert Lehm. Wichtig für Lagerhaus, Kaserne und Versammlungsplatz.' },
+            { type: 'iron', name: 'Eisenmine', icon: '⚙️', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22, help: 'Produziert Eisen. Stadtmauer und höhere Gebäude benötigen viel Eisen.' },
+            { type: 'crop', name: 'Acker', icon: '🌾', base: { w: 50, c: 60, i: 40, r: 80 }, prodBase: 20, prodFactor: 1.25, help: 'Produziert Getreide. Teurer auszubauen, aber essentiell – Truppen verbrauchen Getreide!' },
         ];
 
         const BUILD_REQS = {
@@ -510,9 +575,30 @@
             return Object.fromEntries(Object.entries(base).map(([k, v]) => [k, Math.floor(v * Math.pow(1.55, level))]));
         }
 
-        function getBuildTime(baseTime, level, mainLevel) {
+        function getBuildTime(baseTime, level) {
             const speedBonus = 1 + (game.buildings.main || 0) * 0.05;
             return Math.floor(baseTime * Math.pow(1.5, level) / speedBonus);
+        }
+
+        const HELP_TEXTS = {
+            resources: 'Rohstoffe: Holz, Lehm, Eisen, Getreide.\n\nProduktion: Rohstofffelder erzeugen pro Stunde. Die Zahl zeigt +X/h.\n\nSpeicher: Lagerhaus (Holz/Lehm/Eisen) und Getreidespeicher begrenzen die Kapazität.\n\nVerbrauch: Truppen verbrauchen Getreide pro Stunde. Wenn Verbrauch > Produktion, sinkt der Getreide-Vorrat.',
+            map: 'Weltkarte: Dein Dorf ist in der Mitte (🏰). Klicke darauf, um zum Dorf-Tab zu wechseln und Gebäude/Felder auszubauen.\n\nDie umliegenden Felder können später für weitere Dörfer genutzt werden.',
+            village: 'Dorfzentrum: 6 Gebäude-Plätze.\n\n• Hauptgebäude: Reduziert Bauzeiten\n• Kaserne: Truppen rekrutieren\n• Lagerhaus: Speicher für Holz, Lehm, Eisen\n• Getreidespeicher: Speicher für Getreide\n• Stadtmauer: Verteidigung\n• Versammlungsplatz: 2. Bau-Queue\n\nRohstofffelder: 4× Holzfäller, 4× Lehmgrube, 4× Eisenmine, 6× Acker. Klicken zum Ausbauen.',
+            fields: 'Rohstofffelder produzieren kontinuierlich:\n\n• Holzfäller → Holz\n• Lehmgrube → Lehm\n• Eisenmine → Eisen\n• Acker → Getreide\n\nJede Stufe erhöht die Produktion. Acker sind teurer (mehr Getreide-Kosten), da Getreide der limitierende Faktor ist.',
+            troops: 'Truppen rekrutieren: Benötigt Kaserne.\n\nJede Einheit verbraucht Getreide pro Stunde (steht bei jedem Typ). Achte darauf, dass deine Getreide-Produktion den Verbrauch deckt.\n\nHauptgebäude und Kaserne beschleunigen die Rekrutierung.',
+            reports: 'Berichte protokollieren alle Aktionen: Bauabschlüsse, Rekrutierungen, Warnungen. Die neuesten stehen oben.'
+        };
+        function showHelp(key) {
+            document.getElementById('helpTitle').textContent = 'Hilfe';
+            document.getElementById('helpText').textContent = HELP_TEXTS[key] || 'Keine Hilfe verfügbar.';
+            document.getElementById('helpModal').classList.add('show');
+        }
+        let currentModalHelp = '';
+        function showModalHelp() {
+            if (!currentModalHelp) return;
+            document.getElementById('helpTitle').textContent = 'Erklärung';
+            document.getElementById('helpText').textContent = currentModalHelp;
+            document.getElementById('helpModal').classList.add('show');
         }
 
         let game = {
@@ -673,6 +759,10 @@
             const can = reqOk && Object.entries(cost).every(([k, v]) => game.resources[k] >= v);
             const queueFull = game.queue.length >= maxQueueSlots();
 
+            currentModalHelp = b.help || '';
+            const helpBtn = document.getElementById('modalHelpBtn');
+            helpBtn.style.display = currentModalHelp ? 'flex' : 'none';
+
             document.getElementById('modalTitle').textContent = b.name + (lvl ? ` (Stufe ${lvl + 1})` : ' (Stufe 1)');
             document.getElementById('modalDesc').textContent = reqOk ? b.desc : 'Voraussetzungen: ' + (BUILD_REQS[id] ? Object.entries(BUILD_REQS[id]).map(([x,y]) => `${BUILDINGS[x]?.name} St.${y}`).join(', ') : '');
             document.getElementById('modalCosts').innerHTML = Object.entries(cost).map(([k, v]) => {
@@ -700,6 +790,10 @@
             const can = Object.entries(cost).every(([k, v]) => game.resources[k] >= v);
             const queueFull = game.queue.length >= maxQueueSlots();
             const resNames = { wood: 'Holz', clay: 'Lehm', iron: 'Eisen', crop: 'Getreide' };
+
+            currentModalHelp = type.help || '';
+            const helpBtn = document.getElementById('modalHelpBtn');
+            helpBtn.style.display = currentModalHelp ? 'flex' : 'none';
 
             document.getElementById('modalTitle').textContent = `${type.name} (Stufe ${f.level + 1})`;
             document.getElementById('modalDesc').textContent = `Produziert ${resNames[type.type]}. Stufe ${f.level + 1}: +${Math.floor(type.prodBase * Math.pow(type.prodFactor, f.level))}/h`;
