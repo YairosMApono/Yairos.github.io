@@ -3,7 +3,8 @@
 
     const STORAGE_KEY = "empire-game";
     const START_KEY = "empire-start";
-    const SAVE_VERSION = 3;
+    const TUTORIAL_KEY = "empire-tutorial-done";
+    const SAVE_VERSION = 4;
 
     const DAY_LENGTH_MS = 90_000;
     const TICK_INTERVAL_MS = 250;
@@ -78,9 +79,17 @@
             timeMs: 11_000,
             help: "Mit Versammlungsplatz laufen bis zu 2 Auftraege gleichzeitig.",
         },
+        smithy: {
+            name: "Schmiede",
+            icon: "⚒️",
+            desc: "Ermoeglicht Ausruestung. +5% ATK/DEF pro Ausruestungsstufe.",
+            baseCost: { wood: 120, clay: 150, iron: 200, crop: 50 },
+            timeMs: 15_000,
+            help: "Schmiede Schwerter, Schilde und Ruestungen fuer staerkere Truppen.",
+        },
     };
 
-    const BUILDING_ORDER = ["main", "barracks", "warehouse", "granary", "wall", "rally"];
+    const BUILDING_ORDER = ["main", "barracks", "warehouse", "granary", "wall", "rally", "smithy"];
 
     const BUILD_REQS = {
         barracks: { main: 1 },
@@ -88,7 +97,25 @@
         granary: { main: 1 },
         wall: { main: 3, rally: 1 },
         rally: { main: 1, barracks: 1 },
+        smithy: { main: 4, barracks: 1 },
     };
+
+    const EQUIPMENT = [
+        { id: "sword", name: "Schwert", icon: "🗡️", bonus: "atk", cost: { gold: 50, iron: 80, wood: 40 }, maxLevel: 5 },
+        { id: "shield", name: "Schild", icon: "🛡️", bonus: "def", cost: { gold: 50, iron: 60, clay: 50, wood: 30 }, maxLevel: 5 },
+        { id: "armor", name: "Ruestung", icon: "⚔️", bonus: "def", cost: { gold: 60, iron: 100, clay: 60 }, maxLevel: 5 },
+        { id: "bow", name: "Bogen", icon: "🏹", bonus: "atk", cost: { gold: 45, wood: 80, iron: 40 }, maxLevel: 5 },
+    ];
+    const EQUIPMENT_BY_ID = Object.fromEntries(EQUIPMENT.map((e) => [e.id, e]));
+
+    const ACHIEVEMENTS = [
+        { id: "firstWin", title: "Erster Sieg", desc: "Besiege den ersten Gegner.", reward: 20, check: (s) => (s.statsEnemiesKilled || 0) >= 1 },
+        { id: "army10", title: "Kleine Streitmacht", desc: "Rekrutiere 10 Truppen.", reward: 15, check: (s) => getTotalTroops(s) >= 10 },
+        { id: "dungeonNoLoss", title: "Perfekter Dungeon", desc: "Dungeon ohne Truppenverlust beenden.", reward: 50, check: (s) => (s.achievements || {}).dungeonNoLoss },
+        { id: "army100", title: "Hundert Mann", desc: "Rekrutiere 100 Truppen.", reward: 80, check: (s) => getTotalTroops(s) >= 100 },
+        { id: "allObjectives", title: "Imperator", desc: "Alle 12 Ziele abschliessen.", reward: 150, check: (s) => OBJECTIVES.every((o) => s.objectives[o.id]) },
+        { id: "waves10", title: "Unbezwingbar", desc: "10 Wellen in einem Angriff ueberstehen.", reward: 100, check: (s) => (s.wavesSurvived || 0) >= 10 },
+    ];
 
     const FIELD_LAYOUT = [
         ...Array(4).fill("wood"),
@@ -183,6 +210,12 @@
         { id: "army-100", title: "Endgame-Armee", desc: "Rekrutiere insgesamt 100 Truppen.", reward: { wood: 1000, clay: 1000, iron: 1000, crop: 1000, gold: 500 }, isComplete: (s) => getTotalTroops(s) >= 100 },
     ];
 
+    const ENDLESS_OBJECTIVES = [
+        { id: "main-15", title: "Endlos: Haupt St.15", desc: "Baue das Hauptgebaeude auf Stufe 15.", reward: { wood: 1500, clay: 1500, iron: 1500, crop: 1500, gold: 500 }, isComplete: (s) => (s.buildings.main || 0) >= 15 },
+        { id: "army-200", title: "Endlos: 200 Truppen", desc: "Rekrutiere insgesamt 200 Truppen.", reward: { wood: 2000, clay: 2000, iron: 2000, crop: 2000, gold: 800 }, isComplete: (s) => getTotalTroops(s) >= 200 },
+        { id: "waves-10", title: "Endlos: 10 Wellen", desc: "Ueberstehe 10 Wellen in einem Angriff.", reward: { wood: 1000, clay: 1000, iron: 1000, crop: 1000, gold: 400 }, isComplete: (s) => (s.wavesSurvived || 0) >= 10 },
+    ];
+
     const WORLD_EVENTS = [
         { id: "harvest-festival", title: "Erntefest", summary: "+450 Getreide", apply: (s) => addResources({ crop: 450 }, s) },
         { id: "craftsman-boom", title: "Handwerksboom", summary: "+240 Holz, Lehm, Eisen", apply: (s) => addResources({ wood: 240, clay: 240, iron: 240 }, s) },
@@ -191,7 +224,31 @@
             ["wood", "clay", "iron"].forEach((k) => { s.resources[k] = Math.max(0, s.resources[k] - Math.floor(s.resources[k] * factor)); });
         }},
         { id: "treasure", title: "Schatz gefunden", summary: "+80 Gold", apply: (s) => addResources({ gold: 80 }, s) },
+        { id: "trader", title: "Haendler", summary: "Tausch", apply: (s) => applyTraderEvent(s) },
     ];
+
+    function getRandomTrade() {
+        const trades = [
+            { give: { wood: 200 }, get: { clay: 150 }, desc: "200 Holz gegen 150 Lehm" },
+            { give: { clay: 180 }, get: { iron: 120 }, desc: "180 Lehm gegen 120 Eisen" },
+            { give: { iron: 100 }, get: { wood: 180 }, desc: "100 Eisen gegen 180 Holz" },
+            { give: { crop: 250 }, get: { wood: 150, clay: 100 }, desc: "250 Getreide gegen 150 Holz, 100 Lehm" },
+        ];
+        return trades[Math.floor(pseudoRandomUnit(Date.now()) * trades.length)];
+    }
+
+    function applyTraderEvent(s) {
+        const trade = getRandomTrade();
+        let canAfford = true;
+        Object.entries(trade.give).forEach(([k, v]) => { if ((s.resources[k] || 0) < v) canAfford = false; });
+        if (canAfford) {
+            Object.entries(trade.give).forEach(([k, v]) => { s.resources[k] = Math.max(0, (s.resources[k] || 0) - v); });
+            Object.entries(trade.get).forEach(([k, v]) => { addResources({ [k]: v }, s); });
+            s.lastTradeSummary = "Getauscht: " + trade.desc;
+        } else {
+            s.lastTradeSummary = "Haendler bot " + trade.desc + " an, aber du hattest nicht genug.";
+        }
+    }
 
     const HELP_TEXTS = {
         resources:
@@ -228,10 +285,11 @@
         return {
             version: SAVE_VERSION,
             resources: { wood: 750, clay: 750, iron: 750, crop: 750, gold: 0 },
-            buildings: { main: 1, barracks: 0, warehouse: 0, granary: 0, wall: 0, rally: 0 },
+            buildings: { main: 1, barracks: 0, warehouse: 0, granary: 0, wall: 0, rally: 0, smithy: 0 },
             fields: FIELD_LAYOUT.map((type) => ({ type, level: 1 })),
             troops: { militia: 0, sword: 0, spear: 0, axe: 0 },
             troopXp: { militia: 0, sword: 0, spear: 0, axe: 0 },
+            equipment: { sword: 0, shield: 0, armor: 0, bow: 0 },
             queue: [],
             reports: [],
             day: 1,
@@ -242,8 +300,16 @@
             expansion: [],
             dungeonsCleared: {},
             pendingAttack: null,
+            attackWarningDay: 0,
             wavesSurvived: 0,
             lastDungeonDay: 0,
+            gameSpeed: 1,
+            gamePaused: false,
+            gamePausedAt: 0,
+            difficulty: "normal",
+            achievements: {},
+            statsEnemiesKilled: 0,
+            statsDaysPlayed: 0,
         };
     }
 
@@ -266,6 +332,8 @@
         });
         return normalized;
     }
+
+    let reportFilter = "all";
 
     function normalizeTroops(rawTroops) {
         const raw = rawTroops && typeof rawTroops === "object" ? rawTroops : {};
@@ -346,18 +414,16 @@
             .map((report) => ({
                 text: String(report.text || ""),
                 time: String(report.time || new Date().toLocaleString("de-DE")),
+                type: report.type || "general",
             }))
             .filter((report) => report.text);
     }
 
     function normalizeObjectives(rawObjectives) {
-        const normalized = Object.fromEntries(OBJECTIVES.map((objective) => [objective.id, false]));
-        if (!rawObjectives || typeof rawObjectives !== "object") {
-            return normalized;
-        }
-        OBJECTIVES.forEach((objective) => {
-            normalized[objective.id] = Boolean(rawObjectives[objective.id]);
-        });
+        const all = [...OBJECTIVES, ...ENDLESS_OBJECTIVES];
+        const normalized = Object.fromEntries(all.map((o) => [o.id, false]));
+        if (!rawObjectives || typeof rawObjectives !== "object") return normalized;
+        all.forEach((o) => { normalized[o.id] = Boolean(rawObjectives[o.id]); });
         return normalized;
     }
 
@@ -377,6 +443,8 @@
 
         if (!raw) {
             game = initial;
+            const savedDiff = localStorage.getItem("empire-difficulty");
+            if (savedDiff) game.difficulty = savedDiff;
             return;
         }
 
@@ -416,9 +484,18 @@
         if (!Array.isArray(game.expansion)) game.expansion = [];
         if (!game.dungeonsCleared || typeof game.dungeonsCleared !== "object") game.dungeonsCleared = {};
         if (!game.troopXp || typeof game.troopXp !== "object") game.troopXp = { militia: 0, sword: 0, spear: 0, axe: 0 };
+        if (!game.equipment || typeof game.equipment !== "object") game.equipment = { sword: 0, shield: 0, armor: 0, bow: 0 };
+        if (game.buildings.smithy == null) game.buildings.smithy = 0;
         if (game.wavesSurvived == null) game.wavesSurvived = 0;
         if (game.lastDungeonDay == null) game.lastDungeonDay = 0;
         if (game.resources.gold == null) game.resources.gold = 0;
+        if (game.gameSpeed == null) game.gameSpeed = 1;
+        if (game.gamePaused == null) game.gamePaused = false;
+        if (game.difficulty == null) game.difficulty = "normal";
+        if (!game.achievements || typeof game.achievements !== "object") game.achievements = {};
+        if (game.statsEnemiesKilled == null) game.statsEnemiesKilled = 0;
+        if (game.statsDaysPlayed == null) game.statsDaysPlayed = 0;
+        if (game.attackWarningDay == null) game.attackWarningDay = 0;
     }
 
     function saveGame() {
@@ -442,6 +519,14 @@
                 dungeonsCleared: game.dungeonsCleared,
                 wavesSurvived: game.wavesSurvived,
                 lastDungeonDay: game.lastDungeonDay,
+                equipment: game.equipment,
+                gameSpeed: game.gameSpeed,
+                gamePaused: game.gamePaused,
+                difficulty: game.difficulty,
+                achievements: game.achievements,
+                statsEnemiesKilled: game.statsEnemiesKilled,
+                statsDaysPlayed: game.statsDaysPlayed,
+                attackWarningDay: game.attackWarningDay,
             })
         );
     }
@@ -542,15 +627,28 @@
         return Math.min(10, level);
     }
 
+    function getEquipmentBonus(state = game) {
+        const eq = state.equipment || {};
+        let atkBonus = 1, defBonus = 1;
+        EQUIPMENT.forEach((e) => {
+            const lvl = eq[e.id] || 0;
+            const b = 1 + lvl * 0.05;
+            if (e.bonus === "atk") atkBonus *= b;
+            else defBonus *= b;
+        });
+        return { atkBonus, defBonus };
+    }
+
     function getTroopPower(troopId, count, xp, state = game) {
         const troop = TROOPS_BY_ID[troopId];
         if (!troop) return { atk: 0, def: 0 };
         const level = getTroopLevel(xp || 0);
         const bonus = 1 + (level - 1) * 0.05;
         const wallBonus = 1 + ((state.buildings.wall || 0) * 0.2);
+        const { atkBonus, defBonus } = getEquipmentBonus(state);
         return {
-            atk: Math.floor(troop.atk * count * bonus),
-            def: Math.floor(troop.def * count * bonus * (troopId === "militia" || troopId === "spear" ? wallBonus : 1)),
+            atk: Math.floor(troop.atk * count * bonus * atkBonus),
+            def: Math.floor(troop.def * count * bonus * defBonus * (troopId === "militia" || troopId === "spear" ? wallBonus : 1)),
         };
     }
 
@@ -598,7 +696,13 @@
         Object.entries(result.playerLosses || {}).forEach(([tid, loss]) => {
             state.troops[tid] = Math.max(0, (state.troops[tid] || 0) - loss);
         });
-        if (result.rewards) addResources(result.rewards, state);
+        if (result.victory) state.statsEnemiesKilled = (state.statsEnemiesKilled || 0) + 1;
+        if (result.rewards) {
+            const mult = state.difficulty === "einfach" ? 1.2 : state.difficulty === "schwer" ? 0.8 : 1;
+            const adjusted = {};
+            Object.entries(result.rewards).forEach(([k, v]) => { adjusted[k] = Math.floor(v * mult); });
+            addResources(adjusted, state);
+        }
         if (result.xp && result.victory) {
             const totalTroops = getTotalTroops(state);
             if (totalTroops > 0) {
@@ -617,17 +721,21 @@
     function maybeTriggerAttack(day) {
         if (day < 5) return;
         if (game.pendingAttack) return;
+        const diff = game.difficulty || "normal";
+        const chance = diff === "einfach" ? 0.12 : diff === "schwer" ? 0.25 : 0.18;
         const r = pseudoRandomUnit(day * 7 + 3);
-        if (r > 0.18) return;
+        if (r > chance) return;
         const waveCount = Math.min(5, Math.floor(2 + day / 5));
         const waves = [];
         for (let w = 0; w < waveCount; w++) {
             const idx = Math.min(ENEMIES.length - 1, Math.floor(pseudoRandomUnit(day + w * 11) * ENEMIES.length));
             waves.push(ENEMIES[idx].id);
         }
-        game.pendingAttack = { day, waves, currentWave: 0 };
-        addReport(`Angriff! ${waveCount} Welle(n) naehern sich dem Dorf.`);
+        game.attackWarningDay = day;
+        game.pendingAttack = { day, waves, currentWave: 0, warning: true };
+        addReport(`Spaeher melden: Angriff in 1 Tag! ${waveCount} Welle(n).`, "combat");
     }
+
 
     function resolveAttackWave() {
         if (!game.pendingAttack || game.pendingAttack.currentWave >= game.pendingAttack.waves.length) {
@@ -645,9 +753,9 @@
         applyCombatResult(result);
         game.pendingAttack.currentWave += 1;
         if (result.victory) {
-            addReport(`Welle ${game.pendingAttack.currentWave}: ${enemy.name} besiegt! Belohnung: ${formatResourceList(result.rewards)}.`);
+            addReport(`Welle ${game.pendingAttack.currentWave}: ${enemy.name} besiegt! Belohnung: ${formatResourceList(result.rewards)}.`, "combat");
         } else {
-            addReport(`Welle ${game.pendingAttack.currentWave}: Niederlage gegen ${enemy.name}. Truppenverluste.`);
+            addReport(`Welle ${game.pendingAttack.currentWave}: Niederlage gegen ${enemy.name}. Truppenverluste.`, "combat");
         }
         if (game.pendingAttack.currentWave >= game.pendingAttack.waves.length) {
             game.wavesSurvived = Math.max(game.wavesSurvived || 0, game.pendingAttack.currentWave);
@@ -729,10 +837,44 @@
         }
         game.dungeonsCleared[dungeonId] = Math.max(game.dungeonsCleared[dungeonId] || 0, cleared);
         if (cleared >= dungeon.levels) {
-            addReport(`Dungeon ${dungeon.name} komplett erobert!`);
+            game.achievements = game.achievements || {};
+            game.achievements.dungeonNoLoss = true;
+            addReport(`Dungeon ${dungeon.name} komplett erobert!`, "combat");
         }
         renderAll();
         saveGame();
+    }
+
+    function getEquipmentCost(equipId, level) {
+        const eq = EQUIPMENT_BY_ID[equipId];
+        if (!eq || level >= eq.maxLevel) return null;
+        const mult = Math.pow(1.5, level);
+        const cost = {};
+        Object.entries(eq.cost).forEach(([k, v]) => { cost[k] = Math.floor(v * mult); });
+        return cost;
+    }
+
+    function craftEquipment(equipId) {
+        const eq = EQUIPMENT_BY_ID[equipId];
+        if (!eq || (game.buildings.smithy || 0) < 1) return false;
+        const level = (game.equipment || {})[equipId] || 0;
+        if (level >= eq.maxLevel) return false;
+        const cost = getEquipmentCost(equipId, level);
+        if (!cost || !canAfford(cost)) return false;
+        spendResources(cost);
+        game.equipment[equipId] = level + 1;
+        addReport(`Ausrüstung: ${eq.name} Stufe ${level + 1} hergestellt.`, "build");
+        return true;
+    }
+
+    function evaluateAchievements() {
+        ACHIEVEMENTS.forEach((a) => {
+            if (game.achievements[a.id]) return;
+            if (!a.check(game)) return;
+            game.achievements[a.id] = true;
+            addResources({ gold: a.reward });
+            addReport(`Achievement: ${a.title}! +${a.reward} Gold.`, "objective");
+        });
     }
 
     function canAfford(cost) {
@@ -741,8 +883,8 @@
     }
 
     function spendResources(cost) {
-        RESOURCE_KEYS.forEach((resourceKey) => {
-            game.resources[resourceKey] = Math.max(0, game.resources[resourceKey] - asNumber(cost[resourceKey], 0));
+        ["wood", "clay", "iron", "crop", "gold"].forEach((k) => {
+            game.resources[k] = Math.max(0, (game.resources[k] || 0) - asNumber(cost[k], 0));
         });
     }
 
@@ -788,10 +930,11 @@
             .join(", ");
     }
 
-    function addReport(text) {
+    function addReport(text, type = "general") {
         game.reports.push({
             text,
             time: new Date().toLocaleString("de-DE"),
+            type,
         });
         if (game.reports.length > MAX_REPORTS) {
             game.reports = game.reports.slice(-MAX_REPORTS);
@@ -832,9 +975,14 @@
 
         if (nextDay > game.day) {
             for (let day = game.day + 1; day <= nextDay; day += 1) {
+                if (game.pendingAttack?.warning && day > game.attackWarningDay) {
+                    game.pendingAttack.warning = false;
+                    addReport(`Angriff! ${game.pendingAttack.waves.length} Welle(n) greifen an.`, "combat");
+                }
                 maybeTriggerWorldEvent(day);
                 maybeTriggerAttack(day);
             }
+            game.statsDaysPlayed = (game.statsDaysPlayed || 0) + (nextDay - game.day);
         }
 
         game.day = nextDay;
@@ -858,22 +1006,19 @@
         const event = WORLD_EVENTS[index];
         event.apply(game);
         game.lastEventDay = day;
-        addReport(`Weltereignis (Tag ${day}): ${event.title} - ${event.summary}.`);
+        const summary = event.id === "trader" && game.lastTradeSummary ? game.lastTradeSummary : event.summary;
+        addReport(`Weltereignis (Tag ${day}): ${event.title} - ${summary}.`, "event");
     }
 
     function evaluateObjectives() {
         let changed = false;
-        OBJECTIVES.forEach((objective) => {
-            if (game.objectives[objective.id]) {
-                return;
-            }
-            if (!objective.isComplete(game)) {
-                return;
-            }
-
+        const list = OBJECTIVES.every((o) => game.objectives[o.id]) ? [...OBJECTIVES, ...ENDLESS_OBJECTIVES] : OBJECTIVES;
+        list.forEach((objective) => {
+            if (game.objectives[objective.id]) return;
+            if (!objective.isComplete(game)) return;
             game.objectives[objective.id] = true;
             addResources(objective.reward);
-            addReport(`Ziel erreicht: ${objective.title}. Belohnung: ${formatResourceList(objective.reward)}.`);
+            addReport(`Ziel erreicht: ${objective.title}. Belohnung: ${formatResourceList(objective.reward)}.`, "objective");
             changed = true;
         });
         return changed;
@@ -937,7 +1082,7 @@
             game.troops[item.id] = (game.troops[item.id] || 0) + item.count;
         }
 
-        addReport(`${item.name} abgeschlossen.`);
+        addReport(`${item.name} abgeschlossen.`, "build");
     }
 
     function applyEconomyTick(deltaSeconds) {
@@ -991,6 +1136,7 @@
         handleStarvation(deltaSeconds);
         updateDayAndEvents(nowMs);
         evaluateObjectives();
+        evaluateAchievements();
     }
 
     function applyOfflineProgress() {
@@ -1020,8 +1166,14 @@
     }
 
     function tick() {
+        if (game.gamePaused) {
+            renderAll();
+            return;
+        }
         const now = Date.now();
-        const deltaSeconds = Math.max(0, (now - game.lastTick) / 1_000);
+        let deltaSeconds = Math.max(0, (now - game.lastTick) / 1_000);
+        const speed = game.gameSpeed || 1;
+        deltaSeconds *= speed;
         game.lastTick = now;
 
         advanceSimulation(deltaSeconds, now);
@@ -1117,12 +1269,26 @@
             tile.setAttribute("aria-label", label);
             dom.mapGrid.appendChild(tile);
         }
+        if (dom.mapBadge) dom.mapBadge.hidden = !game.pendingAttack;
         if (dom.attackAlert) {
-            dom.attackAlert.hidden = !game.pendingAttack;
+            const showAlert = game.pendingAttack && (!game.pendingAttack.warning || !game.attackWarningDismissed);
+            dom.attackAlert.hidden = !showAlert;
             if (game.pendingAttack) {
-                const w = game.pendingAttack.waves.length;
-                const c = game.pendingAttack.currentWave;
-                dom.attackAlertText.textContent = `Welle ${c + 1}/${w}: ${ENEMIES_BY_ID[game.pendingAttack.waves[c]]?.name || "Gegner"}. Klicke um Kampf auszufuehren.`;
+                if (game.pendingAttack.warning) {
+                    dom.attackAlertText.textContent = `Spaeher melden: Angriff in 1 Tag! ${game.pendingAttack.waves.length} Welle(n). Bereite deine Truppen vor.`;
+                    if (dom.attackResolveBtn) {
+                        dom.attackResolveBtn.textContent = "Verstanden";
+                        dom.attackResolveBtn.style.display = "inline-block";
+                    }
+                } else {
+                    const w = game.pendingAttack.waves.length;
+                    const c = game.pendingAttack.currentWave;
+                    dom.attackAlertText.textContent = `Welle ${c + 1}/${w}: ${ENEMIES_BY_ID[game.pendingAttack.waves[c]]?.name || "Gegner"}. Klicke um Kampf auszufuehren.`;
+                    if (dom.attackResolveBtn) {
+                        dom.attackResolveBtn.textContent = "Kampf ausfuehren";
+                        dom.attackResolveBtn.style.display = "inline-block";
+                    }
+                }
             }
         }
     }
@@ -1134,6 +1300,7 @@
         granary: ["🌾", "🌾", "🌾", "🌾", "🌾"],
         wall: ["🧱", "🧱", "🧱", "🧱", "🧱"],
         rally: ["🏕️", "🏕️", "🏕️", "🏕️", "🏕️"],
+        smithy: ["⚒️", "⚒️", "⚒️", "⚒️", "⚒️"],
     };
     function getBuildingIcon(buildingId, level) {
         const arr = BUILDING_ICONS_BY_LEVEL[buildingId];
@@ -1208,13 +1375,14 @@
             dom.reportList.innerHTML = '<p class="empty-state">Noch keine Berichte vorhanden.</p>';
             return;
         }
-
-        dom.reportList.innerHTML = game.reports
-            .slice()
-            .reverse()
+        let list = game.reports.slice().reverse();
+        if (reportFilter !== "all") {
+            list = list.filter((r) => (r.type || "general") === reportFilter);
+        }
+        dom.reportList.innerHTML = list
             .map(
                 (report) => `
-                    <article class="report">
+                    <article class="report report-${report.type || "general"}">
                         <div class="time">${report.time}</div>
                         <p>${report.text}</p>
                     </article>
@@ -1224,7 +1392,14 @@
     }
 
     function renderObjectives() {
-        dom.objectiveList.innerHTML = OBJECTIVES.map((objective) => {
+        const allComplete = OBJECTIVES.every((o) => game.objectives[o.id]);
+        const list = allComplete ? [...OBJECTIVES, ...ENDLESS_OBJECTIVES] : OBJECTIVES;
+        game.objectives = game.objectives || {};
+        ENDLESS_OBJECTIVES.forEach((o) => { if (!(o.id in game.objectives)) game.objectives[o.id] = false; });
+        const completed = list.filter((o) => game.objectives[o.id]).length;
+        const prog = document.getElementById("objectiveProgress");
+        if (prog) prog.textContent = `${completed}/${list.length}` + (allComplete ? " (Endlos)" : "");
+        dom.objectiveList.innerHTML = list.map((objective) => {
             const completed = game.objectives[objective.id];
             return `
                 <article class="objective-item ${completed ? "completed" : ""}">
@@ -1235,14 +1410,19 @@
             `;
         }).join("");
 
-        const nextObjective = OBJECTIVES.find((objective) => !game.objectives[objective.id]);
+        const nextObjective = list.find((objective) => !game.objectives[objective.id]);
         dom.activeObjectiveSummary.textContent = nextObjective
             ? `${nextObjective.title}: ${nextObjective.desc}`
-            : "Alle Ziele abgeschlossen.";
+            : "Alle Ziele abgeschlossen! Endlos-Modus aktiv.";
     }
 
     function renderDungeons() {
         if (!dom.dungeonList) return;
+        if (dom.dungeonCooldown) {
+            dom.dungeonCooldown.textContent = game.lastDungeonDay >= game.day
+                ? `Naechster Dungeon: Tag ${game.day + 1}`
+                : "Bereit – betritte einen Dungeon.";
+        }
         const canDo = canStartDungeon();
         dom.dungeonList.innerHTML = DUNGEONS.map((d) => {
             const cleared = (game.dungeonsCleared || {})[d.id] || 0;
@@ -1270,9 +1450,59 @@
         }).join("");
     }
 
+    function renderEquipment() {
+        const el = document.getElementById("equipmentList");
+        const sub = document.getElementById("equipmentSubtitle");
+        if (!el) return;
+        const smithyLvl = game.buildings.smithy || 0;
+        if (smithyLvl < 1) {
+            sub.textContent = "Schmiede Stufe 1 erforderlich.";
+            el.innerHTML = "";
+            return;
+        }
+        sub.textContent = "Verbessere deine Truppen mit Ausrüstung.";
+        el.innerHTML = EQUIPMENT.map((eq) => {
+            const lvl = (game.equipment || {})[eq.id] || 0;
+            const cost = getEquipmentCost(eq.id, lvl);
+            const canCraft = cost && canAfford(cost) && lvl < eq.maxLevel;
+            return `
+                <div class="equipment-item">
+                    <span class="icon">${eq.icon}</span>
+                    <div>
+                        <strong>${eq.name}</strong> St. ${lvl}/${eq.maxLevel} (+${lvl * 5}% ${eq.bonus === "atk" ? "ATK" : "DEF"})
+                    </div>
+                    ${lvl < eq.maxLevel ? `
+                        <button type="button" class="btn btn-sm" data-craft="${eq.id}" ${!canCraft ? "disabled" : ""}>
+                            ${cost ? formatResourceList(cost) : "Max"} – Herstellen
+                        </button>
+                    ` : "<span class=\"ok\">Max</span>"}
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderAchievements() {
+        const el = document.getElementById("achievementList");
+        if (!el) return;
+        el.innerHTML = ACHIEVEMENTS.map((a) => {
+            const done = game.achievements[a.id];
+            return `
+                <div class="achievement-item ${done ? "completed" : ""}">
+                    <span>${done ? "✓" : "○"}</span>
+                    <div>
+                        <strong>${a.title}</strong> – ${a.desc}
+                        ${done ? ` (+${a.reward} Gold)` : ""}
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
     function renderCurrentTab() {
         if (activeTab === "village") {
             renderVillage();
+            renderEquipment();
+            renderAchievements();
         } else if (activeTab === "troops") {
             renderTroops();
         } else if (activeTab === "dungeons") {
@@ -1477,12 +1707,19 @@
     }
 
     function handleResetGame() {
-        const confirmed = window.confirm("Neues Spiel starten? Fortschritt geht verloren.");
-        if (!confirmed) {
-            return;
+        if (dom.newGameModal) {
+            dom.newGameModal.classList.add("show");
+            if (dom.newGameConfirm) dom.newGameConfirm.value = "";
+            if (dom.newGameConfirmBtn) dom.newGameConfirmBtn.disabled = true;
         }
+    }
+
+    function doResetGame() {
+        const diff = document.querySelector('input[name="difficulty"]:checked');
+        if (diff) localStorage.setItem("empire-difficulty", diff.value);
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(START_KEY);
+        localStorage.removeItem(TUTORIAL_KEY);
         window.location.reload();
     }
 
@@ -1590,6 +1827,25 @@
         dom.attackAlertText = document.getElementById("attackAlertText");
         dom.attackResolveBtn = document.getElementById("attackResolveBtn");
         dom.dungeonList = document.getElementById("dungeonList");
+        dom.mapBadge = document.getElementById("mapBadge");
+        dom.newGameModal = document.getElementById("newGameModal");
+        dom.newGameConfirm = document.getElementById("newGameConfirm");
+        dom.newGameConfirmBtn = document.getElementById("newGameConfirmBtn");
+        dom.newGameCancel = document.getElementById("newGameCancel");
+    }
+
+    function showTutorial() {
+        if (localStorage.getItem(TUTORIAL_KEY)) return;
+        const overlay = document.getElementById("tutorialOverlay");
+        const text = document.getElementById("tutorialText");
+        const closeBtn = document.getElementById("tutorialClose");
+        if (!overlay || !text) return;
+        overlay.hidden = false;
+        text.textContent = "Klicke auf dein Dorf 🏰 in der Mitte der Karte, um zu starten.";
+        closeBtn.onclick = () => {
+            overlay.hidden = true;
+            localStorage.setItem(TUTORIAL_KEY, "1");
+        };
     }
 
     function registerEventListeners() {
@@ -1617,8 +1873,59 @@
         dom.villageLayout.addEventListener("click", handleVillageClick);
         dom.resourceFields.addEventListener("click", handleFieldClick);
         dom.troopsGrid.addEventListener("click", handleTroopClick);
-        if (dom.attackResolveBtn) dom.attackResolveBtn.addEventListener("click", resolveAttackWave);
+        if (dom.newGameConfirm) dom.newGameConfirm.addEventListener("input", () => {
+            dom.newGameConfirmBtn.disabled = dom.newGameConfirm.value.toUpperCase() !== "NEU";
+        });
+        if (dom.newGameConfirmBtn) dom.newGameConfirmBtn.addEventListener("click", doResetGame);
+        if (dom.newGameCancel) dom.newGameCancel.addEventListener("click", () => {
+            if (dom.newGameModal) dom.newGameModal.classList.remove("show");
+        });
+        if (dom.newGameModal) dom.newGameModal.addEventListener("click", (e) => {
+            if (e.target === dom.newGameModal) dom.newGameModal.classList.remove("show");
+        });
+        document.querySelectorAll(".filter-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+                btn.classList.add("active");
+                reportFilter = btn.dataset.filter;
+                renderReports();
+            });
+        });
+        document.querySelectorAll(".speed-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const id = btn.id;
+                document.querySelectorAll(".speed-btn").forEach((b) => b.classList.remove("active"));
+                btn.classList.add("active");
+                if (id === "speedPause") {
+                    game.gamePaused = true;
+                    game.gamePausedAt = Date.now();
+                    game.gameSpeed = 0;
+                } else {
+                    game.gamePaused = false;
+                    game.gameSpeed = id === "speed2x" ? 2 : 1;
+                    game.lastTick = Date.now();
+                }
+                saveGame();
+            });
+        });
+        if (dom.attackResolveBtn) dom.attackResolveBtn.addEventListener("click", () => {
+            if (game.pendingAttack?.warning) {
+                game.attackWarningDismissed = true;
+                renderAll();
+            } else {
+                resolveAttackWave();
+            }
+        });
         if (dom.dungeonList) dom.dungeonList.addEventListener("click", handleDungeonClick);
+        document.getElementById("equipmentList")?.addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-craft]");
+            if (!btn) return;
+            if (craftEquipment(btn.dataset.craft)) {
+                renderEquipment();
+                renderAll();
+                saveGame();
+            }
+        });
 
         dom.helpModal.addEventListener("click", (event) => {
             if (event.target === dom.helpModal) {
@@ -1646,6 +1953,7 @@
             linkEl.href = window.location.href;
             linkEl.title = "Link zum Spiel: " + window.location.href;
         }
+        showTutorial();
         loadGame();
         ensureStartTimestamp();
         applyOfflineProgress();

@@ -104,6 +104,121 @@ input:focus-visible {
     justify-content: center;
     flex-wrap: wrap;
     margin-top: var(--space-xs);
+    align-items: center;
+}
+
+.speed-controls {
+    display: flex;
+    gap: 2px;
+}
+
+.speed-btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    min-width: 36px;
+}
+
+.speed-btn.active {
+    border-color: var(--gold);
+    background: var(--gold-dim);
+}
+
+.tab {
+    position: relative;
+}
+
+.tab-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--warn);
+    color: white;
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    border-radius: 50%;
+    min-width: 14px;
+    text-align: center;
+}
+
+.tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+}
+
+.tutorial-content {
+    background: var(--surface-elevated);
+    border: 2px solid var(--gold);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    max-width: 360px;
+}
+
+.tutorial-content p {
+    margin-bottom: var(--space-md);
+}
+
+.difficulty-select {
+    display: flex;
+    gap: var(--space-md);
+    margin: var(--space-sm) 0;
+}
+
+.difficulty-select label {
+    cursor: pointer;
+}
+
+.report-filters {
+    display: flex;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-sm);
+}
+
+.filter-btn {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.8rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    color: var(--parchment);
+    cursor: pointer;
+}
+
+.filter-btn.active {
+    border-color: var(--gold);
+    background: var(--gold-dim);
+}
+
+.dungeon-cooldown {
+    font-size: 0.9rem;
+    color: var(--gold-light);
+    margin-bottom: var(--space-sm);
+}
+
+.equipment-list,
+.achievement-list {
+    display: grid;
+    gap: var(--space-sm);
+}
+
+.equipment-item,
+.achievement-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-sm);
+}
+
+.achievement-item.completed {
+    border-left: 4px solid var(--ok);
 }
 
 .link-btn {
@@ -673,6 +788,10 @@ input:focus-visible {
     align-items: center;
     justify-content: center;
     padding: var(--space-md);
+}
+
+.modal {
+    display: none;
 }
 
 .modal.show {
