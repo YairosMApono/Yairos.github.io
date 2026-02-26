@@ -8,124 +8,402 @@
     <title>Empire Builder - Einzelspieler Strategie</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
+        /* ═══════════════════════════════════════════════════════════════
+           DESIGN SYSTEM - Einheitliches Pattern
+           - Radius: 20px (große Container), 16px (Karten), 12px (Elemente)
+           - Spacing: 8px Grid (0.5rem, 1rem, 1.5rem, 2rem)
+           - Schatten: 3 Stufen (soft, medium, glow)
+           ═══════════════════════════════════════════════════════════════ */
         :root {
+            --radius-xl: 24px;
+            --radius-lg: 20px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+            --radius-xs: 8px;
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 1.5rem;
+            --space-lg: 2rem;
+            --shadow-soft: 0 4px 12px rgba(0,0,0,0.2);
+            --shadow-medium: 0 8px 24px rgba(0,0,0,0.3);
+            --shadow-glow: 0 0 30px rgba(201,162,39,0.2);
             --gold: #c9a227;
             --gold-light: #e8d48b;
+            --gold-dim: rgba(201,162,39,0.15);
             --parchment: #f4e4bc;
             --parchment-dark: #d4c49a;
             --forest: #1a472a;
             --forest-light: #2d5a3d;
-            --wood: #8b4513;
-            --clay: #cd7f32;
-            --iron: #708090;
-            --crop: #daa520;
+            --surface: rgba(26,35,26,0.95);
+            --surface-elevated: rgba(35,50,35,0.98);
+            --border: rgba(201,162,39,0.25);
+            --border-active: rgba(201,162,39,0.6);
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Crimson Text', serif; background: linear-gradient(135deg, #0d2818 0%, #1a472a 50%, #0d2818 100%); color: var(--parchment); min-height: 100vh; overflow-x: hidden; }
-        
-        .game-container { max-width: 1400px; margin: 0 auto; padding: 0.5rem; min-height: 100vh; }
-        
-        /* Resource Bar */
-        .resource-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem; background: linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3)); border-radius: 12px; margin-bottom: 1rem; border: 2px solid var(--gold); box-shadow: inset 0 0 20px rgba(201,162,39,0.2); }
-        .resource { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(201,162,39,0.3); min-width: 140px; }
-        .resource-icon { font-size: 1.5rem; filter: drop-shadow(0 0 4px rgba(201,162,39,0.5)); }
-        .resource-info { font-size: 0.9rem; }
-        .resource-value { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold-light); }
+        body {
+            font-family: 'Crimson Text', serif;
+            background: linear-gradient(135deg, #0d2818 0%, #1a472a 40%, #0f3d20 100%);
+            color: var(--parchment);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Card Pattern - Alle Container nutzen dieses Basis-Styling */
+        .card-pattern {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            box-shadow: var(--shadow-soft), var(--shadow-glow);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .card-pattern:hover { border-color: var(--border-active); }
+        .card-pattern.elevated { background: var(--surface-elevated); }
+
+        .game-container { max-width: 1400px; margin: 0 auto; padding: var(--space-sm); min-height: 100vh; }
+
+        /* Header */
+        .game-header {
+            text-align: center;
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+        }
+        .game-header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            color: var(--gold);
+            text-shadow: 0 0 24px rgba(201,162,39,0.4);
+        }
+        .game-header p { font-size: 0.95rem; opacity: 0.85; margin-top: var(--space-xs); }
+
+        /* Resource Bar - Card Pattern */
+        .resource-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            margin-bottom: var(--space-md);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow-soft);
+        }
+        .resource {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-xs) var(--space-sm);
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            min-width: 130px;
+            transition: all 0.2s;
+        }
+        .resource:hover { border-color: var(--border-active); }
+        .resource-icon { font-size: 1.4rem; filter: drop-shadow(0 0 6px rgba(201,162,39,0.4)); }
+        .resource-value { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold-light); font-size: 1.05rem; }
         .resource-rate { font-size: 0.75rem; color: #8fbc8f; }
-        
-        /* Tabs */
-        .tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; flex-wrap: wrap; }
-        .tab { padding: 0.75rem 1.5rem; background: rgba(0,0,0,0.4); border: 2px solid transparent; border-radius: 8px; cursor: pointer; font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--parchment); transition: all 0.3s; }
-        .tab:hover { background: rgba(201,162,39,0.2); border-color: var(--gold); }
-        .tab.active { background: linear-gradient(180deg, rgba(201,162,39,0.3), rgba(201,162,39,0.1)); border-color: var(--gold); color: var(--gold-light); box-shadow: 0 0 15px rgba(201,162,39,0.3); }
-        
-        /* Map */
-        .map-container { background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.8)); border-radius: 16px; padding: 1.5rem; border: 2px solid var(--gold); margin-bottom: 1rem; position: relative; overflow: hidden; }
-        .map-container::before { content: ''; position: absolute; inset: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 0h20v20H0z" fill="none" stroke="rgba(201,162,39,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23g)"/></svg>'); opacity: 0.5; pointer-events: none; }
-        .map-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 500px; margin: 0 auto; position: relative; z-index: 1; }
-        .map-tile { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, #2d2d1a, #1a1a0d); border: 2px solid rgba(201,162,39,0.3); border-radius: 8px; font-size: 1.5rem; cursor: pointer; transition: all 0.3s; }
-        .map-tile:hover { transform: scale(1.05); border-color: var(--gold); box-shadow: 0 0 20px rgba(201,162,39,0.4); }
-        .map-tile.village { background: linear-gradient(145deg, #3d3d2a, #2a2a1a); border-color: var(--gold); box-shadow: 0 0 25px rgba(201,162,39,0.5); }
-        .map-tile.village::after { content: '🏰'; font-size: 2rem; }
-        .map-tile.empty { background: linear-gradient(145deg, #1a2a1a, #0d1a0d); }
-        .map-tile.empty::after { content: '🌲'; font-size: 1.2rem; opacity: 0.6; }
-        
-        /* Village View */
+        .resource-storage { font-size: 0.7rem; color: rgba(255,255,255,0.5); }
+
+        /* Tabs - Einheitliche Pill-Form */
+        .tabs {
+            display: flex;
+            gap: var(--space-xs);
+            margin-bottom: var(--space-md);
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: var(--space-sm) var(--space-md);
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--parchment);
+            transition: all 0.25s;
+        }
+        .tab:hover { border-color: var(--border-active); background: var(--gold-dim); }
+        .tab.active {
+            background: linear-gradient(135deg, var(--gold-dim), transparent);
+            border-color: var(--gold);
+            color: var(--gold-light);
+            box-shadow: var(--shadow-glow);
+        }
+
+        /* Map - Card Pattern */
+        .map-container {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-md);
+            box-shadow: var(--shadow-medium);
+            position: relative;
+            overflow: hidden;
+        }
+        .map-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(201,162,39,0.03) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .section-title {
+            font-family: 'Cinzel', serif;
+            text-align: center;
+            margin-bottom: var(--space-md);
+            color: var(--gold);
+            font-size: 1.1rem;
+        }
+        .section-subtitle { text-align: center; margin-bottom: var(--space-md); font-size: 0.9rem; opacity: 0.9; }
+
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: var(--space-xs);
+            max-width: 480px;
+            margin: 0 auto var(--space-md);
+            position: relative;
+            z-index: 1;
+        }
+        .map-tile {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .map-tile:hover {
+            transform: scale(1.05);
+            border-color: var(--gold);
+            box-shadow: var(--shadow-glow);
+        }
+        .map-tile.village {
+            background: linear-gradient(145deg, rgba(201,162,39,0.2), rgba(201,162,39,0.05));
+            border-color: var(--gold);
+            box-shadow: var(--shadow-glow);
+        }
+        .map-tile.village::after { content: '🏰'; font-size: 1.8rem; }
+        .map-tile.empty::after { content: '🌲'; font-size: 1.1rem; opacity: 0.5; }
+
+        /* Village - Building Slots (Card Pattern) */
         .village-view { display: none; }
         .village-view.active { display: block; }
-        .village-layout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 600px; margin: 0 auto 2rem; }
-        .building-slot { aspect-ratio: 1; background: linear-gradient(145deg, #2a2a1a, #1a1a0d); border: 2px solid rgba(201,162,39,0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; padding: 0.5rem; min-height: 120px; }
-        .building-slot:hover { border-color: var(--gold); box-shadow: 0 0 25px rgba(201,162,39,0.3); transform: translateY(-2px); }
-        .building-slot.empty { background: linear-gradient(145deg, #1a1a0d, #0d0d05); border-style: dashed; }
-        .building-slot .icon { font-size: 2.5rem; margin-bottom: 0.25rem; }
+        .village-layout {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+            max-width: 560px;
+            margin: 0 auto var(--space-lg);
+        }
+        .building-slot {
+            aspect-ratio: 1;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            padding: var(--space-sm);
+            min-height: 110px;
+        }
+        .building-slot:hover {
+            border-color: var(--gold);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-3px);
+        }
+        .building-slot.empty {
+            background: rgba(0,0,0,0.3);
+            border-style: dashed;
+            border-color: rgba(201,162,39,0.2);
+        }
+        .building-slot .icon { font-size: 2.2rem; margin-bottom: var(--space-xs); }
         .building-slot .name { font-family: 'Cinzel', serif; font-size: 0.8rem; text-align: center; }
-        .building-slot .level { font-size: 0.75rem; color: var(--gold); }
-        
-        /* Resource Fields */
-        .resource-fields { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; max-width: 400px; margin: 0 auto 2rem; }
-        .field { aspect-ratio: 1; background: linear-gradient(145deg, #2a3520, #1a2510); border: 2px solid rgba(201,162,39,0.3); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; }
-        .field:hover { border-color: var(--gold); transform: scale(1.05); }
-        .field .icon { font-size: 1.8rem; }
-        .field .lvl { font-size: 0.8rem; color: var(--gold); }
-        
-        /* Modal */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+        .building-slot .level { font-size: 0.75rem; color: var(--gold); margin-top: var(--space-xs); }
+
+        /* Resource Fields - Card Pattern */
+        .resource-fields {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: var(--space-sm);
+            max-width: 420px;
+            margin: 0 auto var(--space-lg);
+        }
+        .field {
+            aspect-ratio: 1;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            padding: var(--space-xs);
+        }
+        .field:hover {
+            border-color: var(--gold);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-glow);
+        }
+        .field .icon { font-size: 1.6rem; }
+        .field .name { font-size: 0.7rem; margin-top: 2px; }
+        .field .lvl { font-size: 0.75rem; color: var(--gold); margin-top: 2px; }
+
+        /* Queue - Card Pattern */
+        .queue {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-xs);
+        }
+        .queue-item .progress {
+            flex: 1;
+            height: 10px;
+            background: rgba(0,0,0,0.4);
+            border-radius: var(--radius-xs);
+            overflow: hidden;
+        }
+        .queue-item .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: var(--radius-xs);
+            transition: width 0.15s;
+        }
+
+        /* Modal - Card Pattern XL */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-md);
+        }
         .modal.show { display: flex; }
-        .modal-content { background: linear-gradient(180deg, #2a3520, #1a2510); border: 3px solid var(--gold); border-radius: 20px; padding: 2rem; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 50px rgba(201,162,39,0.3); }
-        .modal-content h2 { font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: 1rem; font-size: 1.3rem; }
-        .modal-content .costs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
-        .modal-content .cost { display: flex; align-items: center; gap: 0.3rem; font-size: 0.9rem; }
+        .modal-content {
+            background: var(--surface-elevated);
+            border: 2px solid var(--gold);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            max-width: 420px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-medium), 0 0 60px rgba(201,162,39,0.15);
+        }
+        .modal-content h2 { font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: var(--space-sm); font-size: 1.2rem; }
+        .modal-content .costs { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin: var(--space-sm) 0; }
+        .modal-content .cost { display: flex; align-items: center; gap: 4px; font-size: 0.9rem; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: var(--radius-xs); }
         .modal-content .cost.can { color: #8fbc8f; }
-        .modal-content .cost.cannot { color: #cd5c5c; }
-        .modal-content .time { margin: 0.5rem 0; color: var(--gold-light); }
-        .modal-content .desc { font-size: 0.9rem; margin-bottom: 1rem; opacity: 0.9; }
-        .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
-        .btn { padding: 0.75rem 1.5rem; border: 2px solid var(--gold); background: linear-gradient(180deg, rgba(201,162,39,0.3), rgba(201,162,39,0.1)); color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 0.95rem; cursor: pointer; border-radius: 12px; transition: all 0.3s; }
-        .btn:hover { background: rgba(201,162,39,0.4); box-shadow: 0 0 20px rgba(201,162,39,0.4); }
+        .modal-content .cost.cannot { color: #e07a7a; }
+        .modal-content .time { margin: var(--space-xs) 0; color: var(--gold-light); font-size: 0.9rem; }
+        .modal-content .desc { font-size: 0.9rem; margin-bottom: var(--space-sm); opacity: 0.9; line-height: 1.4; }
+        .modal-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-md); justify-content: flex-end; }
+
+        /* Buttons - Einheitliche Pill-Form */
+        .btn {
+            padding: var(--space-sm) var(--space-md);
+            border: 2px solid var(--gold);
+            background: var(--gold-dim);
+            color: var(--gold-light);
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all 0.25s;
+        }
+        .btn:hover { background: rgba(201,162,39,0.3); box-shadow: var(--shadow-glow); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        /* Construction Queue */
-        .queue { background: rgba(0,0,0,0.4); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid rgba(201,162,39,0.3); }
-        .queue-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; }
-        .queue-item .progress { flex: 1; height: 8px; background: #333; border-radius: 4px; margin: 0 1rem; overflow: hidden; }
-        .queue-item .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 4px; transition: width 0.1s; }
-        
-        /* Troops */
-        .troops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
-        .troop-card { background: linear-gradient(145deg, #2a2a1a, #1a1a0d); border: 2px solid rgba(201,162,39,0.3); border-radius: 12px; padding: 1rem; }
-        .troop-card .icon { font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; }
-        .troop-card .name { font-family: 'Cinzel', serif; font-size: 0.95rem; margin-bottom: 0.25rem; }
-        .troop-card .count { font-size: 1.2rem; color: var(--gold); }
-        .troop-card input { width: 60px; padding: 0.3rem; margin: 0.5rem 0; text-align: center; background: #1a1a0d; border: 1px solid var(--gold); border-radius: 4px; color: var(--parchment); }
-        
-        /* Reports */
-        .report-list { max-height: 400px; overflow-y: auto; }
-        .report { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; border-left: 4px solid var(--gold); }
-        .report .time { font-size: 0.8rem; color: #8fbc8f; }
-        
-        /* Info Panel */
-        .info-panel { background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1rem; margin-top: 1rem; border: 1px solid rgba(201,162,39,0.2); }
-        .info-panel h3 { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); margin-bottom: 0.5rem; }
-        
+        .btn-sm { padding: var(--space-xs) var(--space-sm); font-size: 0.85rem; }
+        .btn-danger { border-color: #c45c5c; color: #e8a0a0; background: rgba(196,92,92,0.2); }
+
+        /* Troops - Card Pattern */
+        .troops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-md); }
+        .troop-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            transition: all 0.25s;
+        }
+        .troop-card:hover { border-color: var(--border-active); }
+        .troop-card .icon { font-size: 2.2rem; text-align: center; margin-bottom: var(--space-xs); }
+        .troop-card .name { font-family: 'Cinzel', serif; font-size: 0.9rem; margin-bottom: 2px; }
+        .troop-card .count { font-size: 1.1rem; color: var(--gold); }
+        .troop-card input {
+            width: 56px;
+            padding: var(--space-xs);
+            margin: var(--space-xs) 0;
+            text-align: center;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-xs);
+            color: var(--parchment);
+            font-size: 0.9rem;
+        }
+
+        /* Reports - Card Pattern */
+        .report-list { max-height: 380px; overflow-y: auto; }
+        .report {
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            padding: var(--space-sm);
+            margin-bottom: var(--space-xs);
+            border-left: 4px solid var(--gold);
+        }
+        .report .time { font-size: 0.75rem; color: #8fbc8f; margin-bottom: 2px; }
+
+        /* Info Panel - Card Pattern */
+        .info-panel {
+            background: rgba(0,0,0,0.3);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-top: var(--space-md);
+            border: 1px solid var(--border);
+        }
+        .info-panel h3 { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--gold); margin-bottom: var(--space-xs); }
+
         @media (max-width: 600px) {
             .village-layout { grid-template-columns: repeat(2, 1fr); }
             .resource-fields { grid-template-columns: repeat(3, 1fr); }
-            .resource { min-width: 120px; }
+            .resource { min-width: 110px; }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <header style="text-align:center;padding:1rem;margin-bottom:0.5rem">
-            <h1 style="font-family:'Cinzel',serif;font-size:1.8rem;color:var(--gold);text-shadow:0 0 20px rgba(201,162,39,0.5)">⚔️ Empire Builder</h1>
-            <p style="font-size:0.9rem;opacity:0.8">Baue dein Reich – Einzelspieler Strategie</p>
+        <header class="game-header">
+            <h1>⚔️ Empire Builder</h1>
+            <p>Baue dein Reich – Einzelspieler Strategie</p>
+            <button class="btn btn-sm" style="margin-top:0.5rem;font-size:0.8rem" onclick="if(confirm('Neues Spiel starten? Fortschritt geht verloren.')){localStorage.removeItem('empire-game');localStorage.removeItem('empire-start');location.reload()}">🔄 Neues Spiel</button>
         </header>
+
         <div class="resource-bar">
-            <div class="resource"><span class="resource-icon">🪵</span><div class="resource-info"><span class="resource-value" id="resWood">0</span><div class="resource-rate" id="rateWood">+0/h</div></div></div>
-            <div class="resource"><span class="resource-icon">🧱</span><div class="resource-info"><span class="resource-value" id="resClay">0</span><div class="resource-rate" id="rateClay">+0/h</div></div></div>
-            <div class="resource"><span class="resource-icon">⚙️</span><div class="resource-info"><span class="resource-value" id="resIron">0</span><div class="resource-rate" id="rateIron">+0/h</div></div></div>
-            <div class="resource"><span class="resource-icon">🌾</span><div class="resource-info"><span class="resource-value" id="resCrop">0</span><div class="resource-rate" id="rateCrop">+0/h</div></div></div>
-            <div class="resource" style="margin-left:auto"><span class="resource-icon">⏱️</span><div class="resource-info"><span class="resource-value" id="gameTime">Tag 1</span></div></div>
+            <div class="resource"><span class="resource-icon">🪵</span><div><span class="resource-value" id="resWood">0</span><div class="resource-rate" id="rateWood">+0/h</div><div class="resource-storage" id="storeWood"></div></div></div>
+            <div class="resource"><span class="resource-icon">🧱</span><div><span class="resource-value" id="resClay">0</span><div class="resource-rate" id="rateClay">+0/h</div><div class="resource-storage" id="storeClay"></div></div></div>
+            <div class="resource"><span class="resource-icon">⚙️</span><div><span class="resource-value" id="resIron">0</span><div class="resource-rate" id="rateIron">+0/h</div><div class="resource-storage" id="storeIron"></div></div></div>
+            <div class="resource"><span class="resource-icon">🌾</span><div><span class="resource-value" id="resCrop">0</span><div class="resource-rate" id="rateCrop">+0/h</div><div class="resource-storage" id="storeCrop"></div></div></div>
+            <div class="resource" style="margin-left:auto"><span class="resource-icon">⏱️</span><div><span class="resource-value" id="gameTime">Tag 1</span></div></div>
         </div>
 
         <div class="tabs">
@@ -135,52 +413,45 @@
             <button class="tab" data-tab="reports">📜 Berichte</button>
         </div>
 
-        <div id="queueContainer" class="queue" style="display:none">
-            <div id="queueList"></div>
-        </div>
+        <div id="queueContainer" class="queue" style="display:none"><div id="queueList"></div></div>
 
-        <!-- Map Tab -->
         <div id="mapTab" class="village-view active">
             <div class="map-container">
-                <h3 style="font-family: 'Cinzel', serif; text-align: center; margin-bottom: 1rem; color: var(--gold);">Weltkarte</h3>
+                <h3 class="section-title">Weltkarte</h3>
                 <div class="map-grid" id="mapGrid"></div>
                 <div class="info-panel">
                     <h3>ℹ️ Hinweis</h3>
-                    <p>Klicke auf dein Dorf (🏰) um es zu verwalten. Erkunde die Karte und erweitere dein Reich!</p>
+                    <p>Klicke auf dein Dorf (🏰) um es zu verwalten. Baue Rohstofffelder aus, errichte Gebäude und rekrutiere Truppen!</p>
                 </div>
             </div>
         </div>
 
-        <!-- Village Tab -->
         <div id="villageTab" class="village-view">
             <div class="map-container">
-                <h3 style="font-family: 'Cinzel', serif; text-align: center; margin-bottom: 1rem; color: var(--gold);">Dorfzentrum</h3>
-                <p style="text-align: center; margin-bottom: 1rem; font-size: 0.9rem;">Klicke auf ein Gebäude zum Ausbauen</p>
+                <h3 class="section-title">Dorfzentrum</h3>
+                <p class="section-subtitle">Klicke auf ein Gebäude oder Feld zum Ausbauen</p>
                 <div class="village-layout" id="villageLayout"></div>
-                <h3 style="font-family: 'Cinzel', serif; text-align: center; margin: 2rem 0 1rem; color: var(--gold);">Rohstofffelder</h3>
+                <h3 class="section-title">Rohstofffelder</h3>
                 <div class="resource-fields" id="resourceFields"></div>
             </div>
         </div>
 
-        <!-- Troops Tab -->
         <div id="troopsTab" class="village-view">
             <div class="map-container">
-                <h3 style="font-family: 'Cinzel', serif; text-align: center; margin-bottom: 1rem; color: var(--gold);">Kaserne</h3>
-                <p style="text-align: center; margin-bottom: 1rem; font-size: 0.9rem;">Rekrutiere Truppen für deine Armee</p>
+                <h3 class="section-title">Kaserne</h3>
+                <p class="section-subtitle">Rekrutiere Truppen – verbrauchen Getreide pro Stunde</p>
                 <div class="troops-grid" id="troopsGrid"></div>
             </div>
         </div>
 
-        <!-- Reports Tab -->
         <div id="reportsTab" class="village-view">
             <div class="map-container">
-                <h3 style="font-family: 'Cinzel', serif; text-align: center; margin-bottom: 1rem; color: var(--gold);">Berichte</h3>
+                <h3 class="section-title">Berichte</h3>
                 <div class="report-list" id="reportList"></div>
             </div>
         </div>
     </div>
 
-    <!-- Building Modal -->
     <div id="buildingModal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle">Gebäude</h2>
@@ -188,37 +459,60 @@
             <div class="costs" id="modalCosts"></div>
             <div class="time" id="modalTime"></div>
             <div class="modal-actions">
-                <button class="btn" id="modalCancel">Abbrechen</button>
+                <button class="btn btn-danger" id="modalCancel">Abbrechen</button>
                 <button class="btn" id="modalBuild">Ausbauen</button>
             </div>
         </div>
     </div>
 
     <script>
+        /* ═══════════════════════════════════════════════════════════════
+           GAMEPLAY BALANCE - Optimierte Formeln
+           - Rohstoffe: Unterschiedliche Produktion pro Feldtyp
+           - Acker teurer (Bottleneck wie Travian)
+           - Gebäude-Abhängigkeiten erweitert
+           - Bauzeit: Main Building reduziert (5% pro Stufe)
+           - Speicher: Warehouse/Granary unterschiedlich
+           ═══════════════════════════════════════════════════════════════ */
+
         const BUILDINGS = {
-            main: { name: 'Hauptgebäude', icon: '🏛️', desc: 'Erhöht die Bauzeit anderer Gebäude.', base: { w: 70, c: 40, i: 60, r: 20 }, time: 1000 },
-            barracks: { name: 'Kaserne', icon: '⚔️', desc: 'Rekrutiere Infanterie-Einheiten.', base: { w: 175, c: 160, i: 80, r: 80 }, time: 1500 },
-            warehouse: { name: 'Lagerhaus', icon: '📦', desc: 'Speichert Holz, Lehm und Eisen.', base: { w: 130, c: 160, i: 90, r: 40 }, time: 1200 },
-            granary: { name: 'Getreidespeicher', icon: '🌾', desc: 'Speichert Getreide.', base: { w: 80, c: 100, i: 70, r: 20 }, time: 1000 },
-            wall: { name: 'Stadtmauer', icon: '🏛️', desc: 'Verteidigt dein Dorf.', base: { w: 70, c: 90, i: 170, r: 70 }, time: 1200 },
-            rally: { name: 'Versammlungsplatz', icon: '🏕️', desc: 'Sende Truppen aus.', base: { w: 110, c: 160, i: 90, r: 70 }, time: 1400 },
+            main: { name: 'Hauptgebäude', icon: '🏛️', desc: 'Reduziert Bau- und Rekrutierungszeiten um 5% pro Stufe.', base: { w: 70, c: 40, i: 60, r: 20 }, time: 8000 },
+            barracks: { name: 'Kaserne', icon: '⚔️', desc: 'Rekrutiere Infanterie. Höhere Stufe = schnellere Rekrutierung.', base: { w: 175, c: 160, i: 80, r: 80 }, time: 12000 },
+            warehouse: { name: 'Lagerhaus', icon: '📦', desc: 'Speichert Holz, Lehm und Eisen. +2500 Kapazität pro Stufe.', base: { w: 130, c: 160, i: 90, r: 40 }, time: 10000 },
+            granary: { name: 'Getreidespeicher', icon: '🌾', desc: 'Speichert Getreide. +2000 Kapazität pro Stufe.', base: { w: 80, c: 100, i: 70, r: 20 }, time: 8000 },
+            wall: { name: 'Stadtmauer', icon: '🧱', desc: 'Verteidigungsbonus für dein Dorf.', base: { w: 70, c: 90, i: 170, r: 70 }, time: 10000 },
+            rally: { name: 'Versammlungsplatz', icon: '🏕️', desc: 'Erlaubt das Aussenden von Truppen. Ermöglicht 2. Bau-Queue.', base: { w: 110, c: 160, i: 90, r: 70 }, time: 11000 },
         };
+
         const FIELDS = [
-            { type: 'wood', name: 'Holzfäller', icon: '🪵', base: { w: 40, c: 50, i: 30, r: 60 } },
-            { type: 'clay', name: 'Lehmgrube', icon: '🧱', base: { w: 40, c: 50, i: 30, r: 60 } },
-            { type: 'iron', name: 'Eisenmine', icon: '⚙️', base: { w: 40, c: 50, i: 30, r: 60 } },
-            { type: 'crop', name: 'Acker', icon: '🌾', base: { w: 40, c: 50, i: 30, r: 60 } },
+            { type: 'wood', name: 'Holzfäller', icon: '🪵', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22 },
+            { type: 'clay', name: 'Lehmgrube', icon: '🧱', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22 },
+            { type: 'iron', name: 'Eisenmine', icon: '⚙️', base: { w: 40, c: 50, i: 30, r: 50 }, prodBase: 25, prodFactor: 1.22 },
+            { type: 'crop', name: 'Acker', icon: '🌾', base: { w: 50, c: 60, i: 40, r: 80 }, prodBase: 20, prodFactor: 1.25 },
         ];
-        const BUILD_REQS = { barracks: { main: 1 }, warehouse: { main: 1 }, granary: { main: 1 }, wall: { main: 3 }, rally: { main: 1, barracks: 1 } };
+
+        const BUILD_REQS = {
+            barracks: { main: 1 },
+            warehouse: { main: 1 },
+            granary: { main: 1 },
+            wall: { main: 3, rally: 1 },
+            rally: { main: 1, barracks: 1 },
+        };
+
         const TROOPS = [
-            { id: 'militia', name: 'Miliz', icon: '🛡️', cost: { w: 60, c: 70, i: 40, r: 20 }, time: 300 },
-            { id: 'sword', name: 'Schwertkämpfer', icon: '⚔️', cost: { w: 60, c: 70, i: 40, r: 20 }, time: 400 },
-            { id: 'spear', name: 'Speerträger', icon: '🔱', cost: { w: 50, c: 60, i: 30, r: 60 }, time: 350 },
-            { id: 'axe', name: 'Axtkämpfer', icon: '🪓', cost: { w: 60, c: 70, i: 40, r: 20 }, time: 450 },
+            { id: 'militia', name: 'Miliz', icon: '🛡️', cost: { w: 60, c: 70, i: 40, r: 20 }, time: 400, consume: 1 },
+            { id: 'sword', name: 'Schwertkämpfer', icon: '⚔️', cost: { w: 60, c: 70, i: 40, r: 20 }, time: 500, consume: 1 },
+            { id: 'spear', name: 'Speerträger', icon: '🔱', cost: { w: 50, c: 60, i: 30, r: 60 }, time: 450, consume: 1 },
+            { id: 'axe', name: 'Axtkämpfer', icon: '🪓', cost: { w: 60, c: 70, i: 40, r: 20 }, time: 600, consume: 2 },
         ];
 
         function getCost(base, level) {
-            return Object.fromEntries(Object.entries(base).map(([k, v]) => [k, Math.floor(v * Math.pow(1.5, level))]));
+            return Object.fromEntries(Object.entries(base).map(([k, v]) => [k, Math.floor(v * Math.pow(1.55, level))]));
+        }
+
+        function getBuildTime(baseTime, level, mainLevel) {
+            const speedBonus = 1 + (game.buildings.main || 0) * 0.05;
+            return Math.floor(baseTime * Math.pow(1.5, level) / speedBonus);
         }
 
         let game = {
@@ -232,8 +526,6 @@
             reports: []
         };
 
-        let selectedBuilding = null;
-
         function load() {
             const s = localStorage.getItem('empire-game');
             if (s) {
@@ -241,10 +533,10 @@
                 game = { ...game, ...d, resources: { ...game.resources, ...d.resources }, buildings: { ...game.buildings, ...d.buildings }, troops: { ...game.troops, ...d.troops } };
             }
             if (game.fields.length !== 18) game.fields = [...Array(4).fill('wood'), ...Array(4).fill('clay'), ...Array(4).fill('iron'), ...Array(6).fill('crop')].map(type => ({ type, level: 0 }));
-            game.resources = { wood: 500, clay: 500, iron: 500, crop: 500, ...game.resources };
+            game.resources = { wood: 750, clay: 750, iron: 750, crop: 750, ...game.resources };
             if (game.buildings.main === 0 && game.fields.every(f => f.level === 0)) {
                 game.buildings.main = 1;
-                game.fields = game.fields.map((f, i) => ({ ...f, level: i < 4 ? 1 : i < 8 ? 1 : i < 12 ? 1 : 1 }));
+                game.fields = game.fields.map(f => ({ ...f, level: 1 }));
             }
         }
 
@@ -256,26 +548,33 @@
                 troops: game.troops,
                 queue: game.queue,
                 day: game.day,
-                reports: game.reports.slice(-50)
+                reports: game.reports.slice(-80)
             }));
         }
 
         function production() {
             const prod = { wood: 0, clay: 0, iron: 0, crop: 0 };
             game.fields.forEach(f => {
-                if (f.level > 0) prod[f.type] += Math.floor(30 * Math.pow(1.2, f.level - 1));
+                if (f.level > 0) {
+                    const type = FIELDS.find(x => x.type === f.type);
+                    prod[f.type] += Math.floor(type.prodBase * Math.pow(type.prodFactor, f.level - 1));
+                }
             });
             return prod;
         }
 
         function storage() {
-            const w = 1000 + game.buildings.warehouse * 2000;
-            const g = 1000 + game.buildings.granary * 2000;
+            const w = 2000 + (game.buildings.warehouse || 0) * 2500;
+            const g = 2000 + (game.buildings.granary || 0) * 2000;
             return { wood: w, clay: w, iron: w, crop: g };
         }
 
         function consume() {
-            return game.troops.militia * 1 + game.troops.sword * 1 + game.troops.spear * 1 + game.troops.axe * 2;
+            return Object.entries(game.troops).reduce((s, [id, c]) => s + (TROOPS.find(t => t.id === id)?.consume || 0) * (c || 0), 0);
+        }
+
+        function maxQueueSlots() {
+            return (game.buildings.rally || 0) > 0 ? 2 : 1;
         }
 
         function tick() {
@@ -292,32 +591,35 @@
             game.resources.iron = Math.min(storageMax.iron, game.resources.iron + prod.iron * dt / 3600);
             game.resources.crop = Math.min(storageMax.crop, Math.max(0, game.resources.crop + (prod.crop - cons) * dt / 3600));
 
-            if (game.queue.length > 0) {
-                const q = game.queue[0];
+            const slots = maxQueueSlots();
+            for (let i = 0; i < Math.min(slots, game.queue.length); i++) {
+                const q = game.queue[i];
+                if (!q) continue;
                 q.remaining -= dt * 1000;
                 if (q.remaining <= 0) {
-                    game.queue.shift();
+                    game.queue.splice(i, 1);
                     if (q.type === 'building') game.buildings[q.id] = (game.buildings[q.id] || 0) + 1;
                     else if (q.type === 'field') game.fields[q.id].level++;
                     else if (q.type === 'troop') game.troops[q.id] = (game.troops[q.id] || 0) + q.count;
                     addReport(`${q.name} abgeschlossen!`);
+                    i--;
                 }
             }
 
-            game.day = Math.floor((now - (localStorage.getItem('empire-start') || now)) / 60000) + 1;
-            if (game.day < 1) game.day = 1;
+            const start = parseInt(localStorage.getItem('empire-start') || now);
+            game.day = Math.max(1, Math.floor((now - start) / 90000) + 1);
 
             updateUI();
         }
 
         function addReport(text) {
             game.reports.push({ text, time: new Date().toLocaleString('de-DE') });
-            if (game.reports.length > 100) game.reports = game.reports.slice(-50);
         }
 
         function updateUI() {
             const prod = production();
             const cons = consume();
+            const store = storage();
             document.getElementById('resWood').textContent = Math.floor(game.resources.wood);
             document.getElementById('resClay').textContent = Math.floor(game.resources.clay);
             document.getElementById('resIron').textContent = Math.floor(game.resources.iron);
@@ -326,13 +628,20 @@
             document.getElementById('rateClay').textContent = `+${prod.clay}/h`;
             document.getElementById('rateIron').textContent = `+${prod.iron}/h`;
             document.getElementById('rateCrop').textContent = `${prod.crop - cons >= 0 ? '+' : ''}${prod.crop - cons}/h`;
+            document.getElementById('storeWood').textContent = `/${store.wood}`;
+            document.getElementById('storeClay').textContent = `/${store.clay}`;
+            document.getElementById('storeIron').textContent = `/${store.iron}`;
+            document.getElementById('storeCrop').textContent = `/${store.crop}`;
             document.getElementById('gameTime').textContent = `Tag ${game.day}`;
 
             if (game.queue.length > 0) {
                 document.getElementById('queueContainer').style.display = 'block';
-                const q = game.queue[0];
-                const total = q.total || q.remaining;
-                document.getElementById('queueList').innerHTML = `<div class="queue-item"><span>${q.icon || '🔨'} ${q.name}</span><div class="progress"><div class="progress-fill" style="width:${(1 - q.remaining / total) * 100}%"></div></div><span>${Math.ceil(q.remaining/1000)}s</span></div>`;
+                const items = game.queue.slice(0, maxQueueSlots());
+                document.getElementById('queueList').innerHTML = items.map((q, i) => {
+                    const total = q.total || q.remaining;
+                    const pct = Math.max(0, (1 - q.remaining / total) * 100);
+                    return `<div class="queue-item"><span>${q.icon || '🔨'} ${q.name}</span><div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div><span>${Math.ceil(q.remaining/1000)}s</span></div>`;
+                }).join('');
             } else document.getElementById('queueContainer').style.display = 'none';
 
             save();
@@ -349,6 +658,68 @@
             }
         }
 
+        function canBuild(id) {
+            const reqs = BUILD_REQS[id];
+            if (!reqs) return true;
+            return Object.entries(reqs).every(([bid, lvl]) => (game.buildings[bid] || 0) >= lvl);
+        }
+
+        function openBuildingModal(id) {
+            const b = BUILDINGS[id];
+            const lvl = game.buildings[id] || 0;
+            const cost = getCost(b.base, lvl);
+            const time = getBuildTime(b.time, lvl);
+            const reqOk = canBuild(id);
+            const can = reqOk && Object.entries(cost).every(([k, v]) => game.resources[k] >= v);
+            const queueFull = game.queue.length >= maxQueueSlots();
+
+            document.getElementById('modalTitle').textContent = b.name + (lvl ? ` (Stufe ${lvl + 1})` : ' (Stufe 1)');
+            document.getElementById('modalDesc').textContent = reqOk ? b.desc : 'Voraussetzungen: ' + (BUILD_REQS[id] ? Object.entries(BUILD_REQS[id]).map(([x,y]) => `${BUILDINGS[x]?.name} St.${y}`).join(', ') : '');
+            document.getElementById('modalCosts').innerHTML = Object.entries(cost).map(([k, v]) => {
+                const ok = game.resources[k] >= v;
+                const icons = { w: '🪵', c: '🧱', i: '⚙️', r: '🌾' };
+                return `<span class="cost ${ok ? 'can' : 'cannot'}">${icons[k]} ${Math.floor(v)}</span>`;
+            }).join('');
+            document.getElementById('modalTime').textContent = `⏱️ Bauzeit: ${Math.ceil(time/1000)} Sekunden`;
+            document.getElementById('modalBuild').disabled = !can || queueFull;
+            document.getElementById('modalBuild').onclick = () => {
+                if (!can || queueFull) return;
+                Object.entries(cost).forEach(([k, v]) => game.resources[k] -= v);
+                game.queue.push({ type: 'building', id, name: `${b.name} St.${lvl + 1}`, icon: b.icon, remaining: time, total: time });
+                document.getElementById('buildingModal').classList.remove('show');
+                addReport(`Bau: ${b.name} Stufe ${lvl + 1}`);
+            };
+            document.getElementById('buildingModal').classList.add('show');
+        }
+
+        function openFieldModal(idx) {
+            const f = game.fields[idx];
+            const type = FIELDS.find(x => x.type === f.type);
+            const cost = getCost(type.base, f.level);
+            const time = getBuildTime(6000, f.level);
+            const can = Object.entries(cost).every(([k, v]) => game.resources[k] >= v);
+            const queueFull = game.queue.length >= maxQueueSlots();
+            const resNames = { wood: 'Holz', clay: 'Lehm', iron: 'Eisen', crop: 'Getreide' };
+
+            document.getElementById('modalTitle').textContent = `${type.name} (Stufe ${f.level + 1})`;
+            document.getElementById('modalDesc').textContent = `Produziert ${resNames[type.type]}. Stufe ${f.level + 1}: +${Math.floor(type.prodBase * Math.pow(type.prodFactor, f.level))}/h`;
+            document.getElementById('modalCosts').innerHTML = Object.entries(cost).map(([k, v]) => {
+                const ok = game.resources[k] >= v;
+                const icons = { w: '🪵', c: '🧱', i: '⚙️', r: '🌾' };
+                return `<span class="cost ${ok ? 'can' : 'cannot'}">${icons[k]} ${Math.floor(v)}</span>`;
+            }).join('');
+            document.getElementById('modalTime').textContent = `⏱️ Bauzeit: ${Math.ceil(time/1000)} Sekunden`;
+            document.getElementById('modalBuild').disabled = !can || queueFull;
+            document.getElementById('modalBuild').onclick = () => {
+                if (!can || queueFull) return;
+                Object.entries(cost).forEach(([k, v]) => game.resources[k] -= v);
+                game.queue.push({ type: 'field', id: idx, name: `${type.name} St.${f.level + 1}`, icon: type.icon, remaining: time, total: time });
+                document.getElementById('buildingModal').classList.remove('show');
+                addReport(`Ausbau: ${type.name} Stufe ${f.level + 1}`);
+            };
+            document.getElementById('buildingModal').classList.add('show');
+        }
+
         function renderVillage() {
             const layout = document.getElementById('villageLayout');
             const slots = ['main', 'barracks', 'warehouse', 'granary', 'wall', 'rally'];
@@ -357,97 +728,48 @@
                 const lvl = game.buildings[id] || 0;
                 return `<div class="building-slot ${lvl ? '' : 'empty'}" data-id="${id}"><span class="icon">${b.icon}</span><span class="name">${b.name}</span><span class="level">${lvl ? 'Stufe ' + lvl : 'Leer'}</span></div>`;
             }).join('');
-
-            layout.querySelectorAll('.building-slot').forEach(el => {
-                el.onclick = () => openBuildingModal(el.dataset.id);
-            });
+            layout.querySelectorAll('.building-slot').forEach(el => el.onclick = () => openBuildingModal(el.dataset.id));
 
             const fields = document.getElementById('resourceFields');
             fields.innerHTML = game.fields.map((f, i) => {
                 const type = FIELDS.find(x => x.type === f.type);
                 return `<div class="field" data-id="${i}"><span class="icon">${type.icon}</span><span class="name">${type.name}</span><span class="lvl">St. ${f.level}</span></div>`;
             }).join('');
-            fields.querySelectorAll('.field').forEach(el => {
-                el.onclick = () => openFieldModal(parseInt(el.dataset.id));
-            });
-        }
-
-        function canBuild(id) {
-            const reqs = BUILD_REQS[id];
-            if (!reqs) return true;
-            return Object.entries(reqs).every(([bid, lvl]) => (game.buildings[bid] || 0) >= lvl);
-        }
-        function openBuildingModal(id) {
-            selectedBuilding = { type: 'building', id };
-            const b = BUILDINGS[id];
-            const lvl = game.buildings[id] || 0;
-            const cost = getCost(b.base, lvl);
-            const time = Math.floor(b.time * Math.pow(1.5, lvl) / (1 + game.buildings.main * 0.1));
-            const reqOk = canBuild(id);
-            const can = reqOk && Object.entries(cost).every(([k, v]) => game.resources[k] >= v);
-            document.getElementById('modalTitle').textContent = b.name + (lvl ? ' (Stufe ' + (lvl + 1) + ')' : ' (Stufe 1)');
-            document.getElementById('modalDesc').textContent = reqOk ? b.desc : 'Voraussetzungen: ' + (BUILD_REQS[id] ? Object.entries(BUILD_REQS[id]).map(([x,y]) => BUILDINGS[x]?.name + ' St.' + y).join(', ') : '');
-            document.getElementById('modalCosts').innerHTML = Object.entries(cost).map(([k, v]) => `<span class="cost ${game.resources[k] >= v ? 'can' : 'cannot'}">${{ w: '🪵', c: '🧱', i: '⚙️', r: '🌾' }[k]} ${Math.floor(v)}</span>`).join('');
-            document.getElementById('modalTime').textContent = `⏱️ Bauzeit: ${Math.ceil(time/1000)} Sekunden`;
-            document.getElementById('modalBuild').disabled = !can || game.queue.length > 0;
-            document.getElementById('modalBuild').onclick = () => {
-                if (!can || game.queue.length > 0) return;
-                Object.entries(cost).forEach(([k, v]) => game.resources[k] -= v);
-                game.queue.push({ type: 'building', id, name: b.name + ' St.' + (lvl + 1), icon: b.icon, remaining: time * 1000, total: time * 1000 });
-                document.getElementById('buildingModal').classList.remove('show');
-                addReport(`Bau gestartet: ${b.name} Stufe ${lvl + 1}`);
-            };
-            document.getElementById('buildingModal').classList.add('show');
-        }
-
-        function openFieldModal(idx) {
-            selectedBuilding = { type: 'field', id: idx };
-            const f = game.fields[idx];
-            const type = FIELDS.find(x => x.type === f.type);
-            const cost = getCost(type.base, f.level);
-            const time = Math.floor(1000 * Math.pow(1.5, f.level) / (1 + game.buildings.main * 0.1));
-            const can = Object.entries(cost).every(([k, v]) => game.resources[k] >= v);
-
-            document.getElementById('modalTitle').textContent = type.name + ' (Stufe ' + (f.level + 1) + ')';
-            document.getElementById('modalDesc').textContent = `Produziert ${type.type === 'wood' ? 'Holz' : type.type === 'clay' ? 'Lehm' : type.type === 'iron' ? 'Eisen' : 'Getreide'}.`;
-            document.getElementById('modalCosts').innerHTML = Object.entries(cost).map(([k, v]) => `<span class="cost ${game.resources[k] >= v ? 'can' : 'cannot'}">${{ w: '🪵', c: '🧱', i: '⚙️', r: '🌾' }[k]} ${Math.floor(v)}</span>`).join('');
-            document.getElementById('modalTime').textContent = `⏱️ Bauzeit: ${Math.ceil(time/1000)} Sekunden`;
-            document.getElementById('modalBuild').disabled = !can || game.queue.length > 0;
-            document.getElementById('modalBuild').onclick = () => {
-                if (!can || game.queue.length > 0) return;
-                Object.entries(cost).forEach(([k, v]) => game.resources[k] -= v);
-                game.queue.push({ type: 'field', id: idx, name: type.name + ' St.' + (f.level + 1), icon: type.icon, remaining: time * 1000, total: time * 1000 });
-                document.getElementById('buildingModal').classList.remove('show');
-                addReport(`Ausbau gestartet: ${type.name} Stufe ${f.level + 1}`);
-            };
-            document.getElementById('buildingModal').classList.add('show');
+            fields.querySelectorAll('.field').forEach(el => el.onclick = () => openFieldModal(parseInt(el.dataset.id)));
         }
 
         function renderTroops() {
             const grid = document.getElementById('troopsGrid');
+            const canTrain = game.buildings.barracks > 0;
+            const queueFull = game.queue.length >= maxQueueSlots();
             grid.innerHTML = TROOPS.map(t => {
                 const count = game.troops[t.id] || 0;
-                const canTrain = game.buildings.barracks > 0;
                 const can = Object.entries(t.cost).every(([k, v]) => game.resources[k] >= v);
-                return `<div class="troop-card"><div class="icon">${t.icon}</div><div class="name">${t.name}</div><div class="count">${count} Einheiten</div>${canTrain ? `<input type="number" id="train${t.id}" min="0" value="1" placeholder="Anzahl"><button class="btn btn-sm" onclick="trainTroop('${t.id}')">Rekrutieren</button>` : '<p style="font-size:0.85rem;color:#8fbc8f">Baue zuerst eine Kaserne</p>'}</div>`;
+                return `<div class="troop-card"><div class="icon">${t.icon}</div><div class="name">${t.name}</div><div class="count">${count} Einheiten</div><small style="opacity:0.7">${t.consume} Getr./h</small>${canTrain ? `<input type="number" id="train${t.id}" min="1" value="1" max="99"><button class="btn btn-sm" onclick="trainTroop('${t.id}')" ${!can || queueFull ? 'disabled' : ''}>Rekrutieren</button>` : '<p style="font-size:0.85rem;color:#8fbc8f;margin-top:4px">Kaserne bauen</p>'}</div>`;
             }).join('');
         }
 
         function trainTroop(id) {
             const t = TROOPS.find(x => x.id === id);
-            const count = parseInt(document.getElementById('train' + id)?.value || 1);
-            if (count < 1) return;
+            const count = Math.min(99, Math.max(1, parseInt(document.getElementById('train' + id)?.value || 1)));
             const cost = Object.fromEntries(Object.entries(t.cost).map(([k, v]) => [k, v * count]));
             const can = Object.entries(cost).every(([k, v]) => game.resources[k] >= v);
-            if (!can || game.queue.length > 0) return;
+            const queueFull = game.queue.length >= maxQueueSlots();
+            if (!can || queueFull) return;
+            const cons = consume();
+            const prod = production();
+            if (prod.crop - cons < t.consume * count && (game.troops[id] || 0) + count > 0) {
+                addReport(`Warnung: Nicht genug Getreide-Produktion für ${count}x ${t.name}!`);
+            }
             Object.entries(cost).forEach(([k, v]) => game.resources[k] -= v);
-            const time = t.time * count * 1000 / (1 + game.buildings.main * 0.1);
+            const time = t.time * count * 1000 / (1 + (game.buildings.main || 0) * 0.05) / (1 + (game.buildings.barracks || 0) * 0.1);
             game.queue.push({ type: 'troop', id, count, name: `${count}x ${t.name}`, icon: t.icon, remaining: time, total: time });
             addReport(`Rekrutierung: ${count}x ${t.name}`);
         }
 
         function renderReports() {
-            document.getElementById('reportList').innerHTML = game.reports.length ? game.reports.slice().reverse().map(r => `<div class="report"><div class="time">${r.time}</div>` + r.text + '</div>').join('') : '<p class="empty-msg" style="text-align:center;padding:2rem;color:#8fbc8f">Noch keine Berichte</p>';
+            const list = document.getElementById('reportList');
+            list.innerHTML = game.reports.length ? game.reports.slice().reverse().map(r => `<div class="report"><div class="time">${r.time}</div>${r.text}</div>`).join('') : '<p style="text-align:center;padding:2rem;color:#8fbc8f">Noch keine Berichte</p>';
         }
 
         function switchTab(name) {
