@@ -1641,6 +1641,11 @@
 
     function init() {
         cacheDomElements();
+        const linkEl = document.getElementById("gameLink");
+        if (linkEl) {
+            linkEl.href = window.location.href;
+            linkEl.title = "Link zum Spiel: " + window.location.href;
+        }
         loadGame();
         ensureStartTimestamp();
         applyOfflineProgress();

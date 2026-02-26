@@ -98,8 +98,21 @@ input:focus-visible {
     margin-top: var(--space-xs);
 }
 
-.new-game-btn {
+.header-actions {
+    display: flex;
+    gap: var(--space-xs);
+    justify-content: center;
+    flex-wrap: wrap;
     margin-top: var(--space-xs);
+}
+
+.link-btn {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.new-game-btn {
     font-size: 0.8rem;
     min-height: 36px;
 }
