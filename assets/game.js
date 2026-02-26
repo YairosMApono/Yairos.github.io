@@ -951,7 +951,7 @@
                         canTrain
                             ? `
                                 <input type="number" id="train-${troop.id}" min="1" max="99" value="1" aria-label="Menge ${troop.name}">
-                                <button type="button" class="btn btn-sm" data-train-id="${troop.id}" ${buttonDisabled ? "disabled" : ""}>
+                                <button type="button" class="btn btn-sm btn-primary" data-train-id="${troop.id}" ${buttonDisabled ? "disabled" : ""}>
                                     Rekrutieren
                                 </button>
                             `

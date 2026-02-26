@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#1a472a">
+    <meta name="theme-color" content="#143824">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Empire Builder - Einzelspieler Strategie</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -11,9 +11,9 @@
 </head>
 <body>
     <main class="game-container">
-        <header class="game-header card-pattern elevated">
+        <header class="game-header">
             <h1>⚔️ Empire Builder</h1>
-            <p>Baue dein Reich - Einzelspieler Strategie</p>
+            <p>Baue dein Reich – Einzelspieler Strategie</p>
             <button class="btn btn-sm new-game-btn" id="resetGameButton" type="button">🔄 Neues Spiel</button>
         </header>
 
@@ -75,8 +75,8 @@
                 </div>
                 <div class="map-grid" id="mapGrid"></div>
                 <div class="info-panel">
-                    <h3>ℹ️ Hinweis</h3>
-                    <p>Klicke auf dein Dorf (🏰), um Gebäude auszubauen, Rohstofffelder zu verbessern und Truppen zu rekrutieren.</p>
+                    <h3>💡 Tipp</h3>
+                    <p>Tippe auf dein Dorf (🏰), um ins Dorfzentrum zu gelangen – dort baust du Gebäude aus, verbesserst Rohstofffelder und rekrutierst Truppen.</p>
                 </div>
             </div>
         </section>
@@ -87,7 +87,7 @@
                     <h3 class="section-title">Dorfzentrum</h3>
                     <button class="help-btn" data-help="village" aria-label="Hilfe zum Dorfzentrum" type="button">?</button>
                 </div>
-                <p class="section-subtitle">Klicke auf Gebäude oder Rohstofffelder, um sie auszubauen.</p>
+                <p class="section-subtitle">Tippe auf Gebäude oder Rohstofffelder, um sie auszubauen.</p>
                 <div class="village-layout" id="villageLayout"></div>
                 <div class="section-header">
                     <h3 class="section-title">Rohstofffelder</h3>
@@ -96,7 +96,7 @@
                 <div class="resource-fields" id="resourceFields"></div>
             </div>
 
-            <section class="objectives card-pattern">
+            <section class="objectives">
                 <div class="section-header">
                     <h3 class="section-title">Ziele</h3>
                     <button class="help-btn" data-help="objectives" aria-label="Hilfe zu Zielen" type="button">?</button>
@@ -111,7 +111,7 @@
                     <h3 class="section-title">Kaserne</h3>
                     <button class="help-btn" data-help="troops" aria-label="Hilfe zur Kaserne" type="button">?</button>
                 </div>
-                <p class="section-subtitle">Rekrutiere Truppen - sie verbrauchen Getreide pro Stunde.</p>
+                <p class="section-subtitle">Rekrutiere Truppen – sie verbrauchen Getreide pro Stunde.</p>
                 <div class="troops-grid" id="troopsGrid"></div>
             </div>
         </section>
@@ -148,7 +148,7 @@
             <div class="time" id="modalTime"></div>
             <div class="modal-actions">
                 <button class="btn btn-danger" id="modalCancel" type="button">Abbrechen</button>
-                <button class="btn" id="modalBuild" type="button">Ausbauen</button>
+                <button class="btn btn-primary" id="modalBuild" type="button">Ausbauen</button>
             </div>
         </div>
     </div>
