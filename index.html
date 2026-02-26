@@ -14,11 +14,23 @@
         <header class="game-header">
             <h1>⚔️ Empire Builder</h1>
             <p>Baue dein Reich – Einzelspieler Strategie</p>
-            <button class="btn btn-sm new-game-btn" id="resetGameButton" type="button">🔄 Neues Spiel</button>
+            <div class="header-actions">
+                <div class="speed-controls">
+                    <button class="btn btn-sm speed-btn" id="speedPause" type="button" title="Pause">⏸</button>
+                    <button class="btn btn-sm speed-btn active" id="speed1x" type="button" title="1x">1x</button>
+                    <button class="btn btn-sm speed-btn" id="speed2x" type="button" title="2x">2x</button>
+                </div>
+                <a class="btn btn-sm link-btn" id="gameLink" href="#" target="_blank" rel="noopener" title="Link zum Spiel">🔗 Link</a>
+                <button class="btn btn-sm new-game-btn" id="resetGameButton" type="button">🔄 Neues Spiel</button>
+            </div>
         </header>
 
         <section class="resource-bar" aria-label="Rohstoffübersicht">
             <button class="help-btn" data-help="resources" aria-label="Hilfe zu Rohstoffen" type="button">?</button>
+            <div class="resource resource-gold">
+                <span class="resource-icon">🪙</span>
+                <div><span class="resource-value" id="resGold">0</span></div>
+            </div>
             <div class="resource">
                 <span class="resource-icon">🪵</span>
                 <div><span class="resource-value" id="resWood">0</span><div class="resource-rate" id="rateWood">+0/h</div><div class="resource-storage" id="storeWood"></div></div>
@@ -42,9 +54,10 @@
         </section>
 
         <nav class="tabs" aria-label="Spielbereiche">
-            <button class="tab active" data-tab="map" type="button">🗺️ Karte</button>
+            <button class="tab active" data-tab="map" type="button">🗺️ Karte<span class="tab-badge" id="mapBadge" hidden>!</span></button>
             <button class="tab" data-tab="village" type="button">🏰 Dorf</button>
             <button class="tab" data-tab="troops" type="button">⚔️ Truppen</button>
+            <button class="tab" data-tab="dungeons" type="button">🕳️ Dungeons</button>
             <button class="tab" data-tab="reports" type="button">📜 Berichte</button>
         </nav>
 
@@ -54,7 +67,7 @@
                 <p id="economySummary">Netto-Getreide: +0/h</p>
             </article>
             <article class="status-card">
-                <h3>Aktives Ziel</h3>
+                <h3>Aktives Ziel <span id="objectiveProgress">0/12</span></h3>
                 <p id="activeObjectiveSummary">Lade Zielstatus...</p>
             </article>
         </section>
@@ -75,8 +88,13 @@
                 </div>
                 <div class="map-grid" id="mapGrid"></div>
                 <div class="info-panel">
-                    <h3>💡 Tipp</h3>
-                    <p>Tippe auf dein Dorf (🏰), um ins Dorfzentrum zu gelangen – dort baust du Gebäude aus, verbesserst Rohstofffelder und rekrutierst Truppen.</p>
+                    <h3>ℹ️ Hinweis</h3>
+                    <p>Klicke auf dein Dorf (🏰) zum Bauen. Erweiterte Felder (🏘️) zeigen dein Reich. Leere Felder (🔲) können expandiert werden.</p>
+                </div>
+                <div id="attackAlert" class="attack-alert" hidden>
+                    <h3>⚠️ Angriff!</h3>
+                    <p id="attackAlertText"></p>
+                    <button class="btn btn-sm" id="attackResolveBtn" type="button">Kampf ausführen</button>
                 </div>
             </div>
         </section>
@@ -103,6 +121,19 @@
                 </div>
                 <div id="objectiveList" class="objective-list"></div>
             </section>
+            <section class="equipment-section card-pattern" id="equipmentSection">
+                <div class="section-header">
+                    <h3 class="section-title">Schmiede – Ausrüstung</h3>
+                </div>
+                <p class="section-subtitle" id="equipmentSubtitle">Schmiede Stufe 1 erforderlich.</p>
+                <div id="equipmentList" class="equipment-list"></div>
+            </section>
+            <section class="achievements-section card-pattern" id="achievementsSection">
+                <div class="section-header">
+                    <h3 class="section-title">Achievements</h3>
+                </div>
+                <div id="achievementList" class="achievement-list"></div>
+            </section>
         </section>
 
         <section id="troopsTab" class="village-view">
@@ -111,8 +142,20 @@
                     <h3 class="section-title">Kaserne</h3>
                     <button class="help-btn" data-help="troops" aria-label="Hilfe zur Kaserne" type="button">?</button>
                 </div>
-                <p class="section-subtitle">Rekrutiere Truppen – sie verbrauchen Getreide pro Stunde.</p>
+                <p class="section-subtitle">Rekrutiere Truppen – sie verbrauchen Getreide pro Stunde. Truppen sammeln XP in Kämpfen.</p>
                 <div class="troops-grid" id="troopsGrid"></div>
+            </div>
+        </section>
+
+        <section id="dungeonsTab" class="village-view">
+            <div class="map-container">
+                <div class="section-header">
+                    <h3 class="section-title">Dungeons</h3>
+                    <button class="help-btn" data-help="dungeons" aria-label="Hilfe zu Dungeons" type="button">?</button>
+                </div>
+                <p class="section-subtitle">Erobere Dungeons mit deinen Truppen. Belohnungen: Gold, Ressourcen, XP.</p>
+                <p class="dungeon-cooldown" id="dungeonCooldown"></p>
+                <div id="dungeonList" class="dungeon-list"></div>
             </div>
         </section>
 
@@ -122,10 +165,41 @@
                     <h3 class="section-title">Berichte</h3>
                     <button class="help-btn" data-help="reports" aria-label="Hilfe zu Berichten" type="button">?</button>
                 </div>
+                <div class="report-filters">
+                    <button class="filter-btn active" data-filter="all" type="button">Alle</button>
+                    <button class="filter-btn" data-filter="build" type="button">Bau</button>
+                    <button class="filter-btn" data-filter="combat" type="button">Kampf</button>
+                    <button class="filter-btn" data-filter="objective" type="button">Ziele</button>
+                    <button class="filter-btn" data-filter="event" type="button">Events</button>
+                </div>
                 <div class="report-list" id="reportList"></div>
             </div>
         </section>
     </main>
+
+    <div id="tutorialOverlay" class="tutorial-overlay" hidden>
+        <div class="tutorial-content">
+            <p id="tutorialText">Klicke auf dein Dorf 🏰 um zu starten.</p>
+            <button class="btn" id="tutorialClose" type="button">Verstanden</button>
+        </div>
+    </div>
+
+    <div id="newGameModal" class="modal">
+        <div class="modal-content">
+            <h2>Neues Spiel?</h2>
+            <p>Alle Fortschritte gehen verloren. Gib <strong>NEU</strong> ein zur Bestätigung.</p>
+            <div class="difficulty-select">
+                <label><input type="radio" name="difficulty" value="einfach"> Einfach</label>
+                <label><input type="radio" name="difficulty" value="normal" checked> Normal</label>
+                <label><input type="radio" name="difficulty" value="schwer"> Schwer</label>
+            </div>
+            <input type="text" id="newGameConfirm" placeholder="NEU" maxlength="3" aria-label="Bestätigung">
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="newGameCancel" type="button">Abbrechen</button>
+                <button class="btn" id="newGameConfirmBtn" type="button" disabled>Bestätigen</button>
+            </div>
+        </div>
+    </div>
 
     <div id="helpModal" class="modal help-modal">
         <div class="modal-content">
