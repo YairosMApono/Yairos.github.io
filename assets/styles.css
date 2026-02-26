@@ -138,6 +138,108 @@ input:focus-visible {
     flex-shrink: 0;
 }
 
+.resource-gold .resource-value {
+    color: var(--gold-light);
+}
+
+.attack-alert {
+    background: rgba(224, 122, 122, 0.2);
+    border: 2px solid var(--warn);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.attack-alert h3 {
+    color: var(--warn);
+    font-family: "Cinzel", serif;
+    margin-bottom: var(--space-xs);
+}
+
+.dungeon-list {
+    display: grid;
+    gap: var(--space-md);
+}
+
+.dungeon-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    transition: border-color 0.2s;
+}
+
+.dungeon-card:hover {
+    border-color: var(--border-active);
+}
+
+.dungeon-card.locked {
+    opacity: 0.7;
+}
+
+.dungeon-card .dungeon-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.dungeon-card .dungeon-icon {
+    font-size: 2rem;
+}
+
+.dungeon-card h4 {
+    font-family: "Cinzel", serif;
+    color: var(--gold);
+    font-size: 1rem;
+}
+
+.dungeon-card .dungeon-levels {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin: var(--space-sm) 0;
+}
+
+.dungeon-level-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(201, 162, 39, 0.3);
+    border: 1px solid var(--border);
+}
+
+.dungeon-level-dot.cleared {
+    background: var(--ok);
+    border-color: var(--ok);
+}
+
+.map-tile.expanded {
+    background: linear-gradient(145deg, rgba(201, 162, 39, 0.25), rgba(201, 162, 39, 0.08));
+    border-color: var(--gold);
+}
+
+.map-tile.expanded::after {
+    content: "🏘️";
+    font-size: 1.4rem;
+}
+
+.map-tile.expandable {
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.map-tile.expandable::after {
+    content: "🔲";
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.troop-xp {
+    font-size: 0.75rem;
+    color: var(--ok);
+}
+
 .resource-icon {
     font-size: 1.4rem;
     filter: drop-shadow(0 0 6px rgba(201, 162, 39, 0.4));
@@ -539,6 +641,16 @@ input:focus-visible {
     color: var(--ok);
 }
 
+.objective-item.completed {
+    animation: objective-complete 0.5s ease-out;
+}
+
+@keyframes objective-complete {
+    0% { box-shadow: 0 0 0 0 rgba(143, 188, 143, 0.5); }
+    50% { box-shadow: 0 0 20px 4px rgba(143, 188, 143, 0.3); }
+    100% { box-shadow: none; }
+}
+
 .modal {
     display: none;
     position: fixed;
@@ -874,10 +986,10 @@ input:focus-visible {
 
     .tab {
         padding: var(--space-xs) var(--space-sm);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         min-height: 44px;
-        flex: 1 1 calc(50% - 4px);
-        max-width: calc(50% - 4px);
+        flex: 1 1 calc(33.33% - 4px);
+        max-width: calc(33.33% - 4px);
         display: flex;
         align-items: center;
         justify-content: center;

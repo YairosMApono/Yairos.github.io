@@ -3,7 +3,7 @@
 
     const STORAGE_KEY = "empire-game";
     const START_KEY = "empire-start";
-    const SAVE_VERSION = 2;
+    const SAVE_VERSION = 3;
 
     const DAY_LENGTH_MS = 90_000;
     const TICK_INTERVAL_MS = 250;
@@ -20,6 +20,7 @@
         clay: "🧱",
         iron: "⚙️",
         crop: "🌾",
+        gold: "🪙",
     };
     const RESOURCE_NAMES = {
         wood: "Holz",
@@ -137,107 +138,78 @@
     const FIELDS_BY_TYPE = Object.fromEntries(FIELDS.map((field) => [field.type, field]));
 
     const TROOPS = [
-        {
-            id: "militia",
-            name: "Miliz",
-            icon: "🛡️",
-            cost: { wood: 60, clay: 70, iron: 40, crop: 20 },
-            trainSeconds: 400,
-            consume: 1,
-        },
-        {
-            id: "sword",
-            name: "Schwertkaempfer",
-            icon: "⚔️",
-            cost: { wood: 60, clay: 70, iron: 40, crop: 20 },
-            trainSeconds: 500,
-            consume: 1,
-        },
-        {
-            id: "spear",
-            name: "Speertraeger",
-            icon: "🔱",
-            cost: { wood: 50, clay: 60, iron: 30, crop: 60 },
-            trainSeconds: 450,
-            consume: 1,
-        },
-        {
-            id: "axe",
-            name: "Axtkaempfer",
-            icon: "🪓",
-            cost: { wood: 60, clay: 70, iron: 40, crop: 20 },
-            trainSeconds: 600,
-            consume: 2,
-        },
+        { id: "militia", name: "Miliz", icon: "🛡️", cost: { wood: 60, clay: 70, iron: 40, crop: 20 }, trainSeconds: 400, consume: 1, atk: 8, def: 2 },
+        { id: "sword", name: "Schwertkaempfer", icon: "⚔️", cost: { wood: 60, clay: 70, iron: 40, crop: 20 }, trainSeconds: 500, consume: 1, atk: 12, def: 5 },
+        { id: "spear", name: "Speertraeger", icon: "🔱", cost: { wood: 50, clay: 60, iron: 30, crop: 60 }, trainSeconds: 450, consume: 1, atk: 10, def: 8 },
+        { id: "axe", name: "Axtkaempfer", icon: "🪓", cost: { wood: 60, clay: 70, iron: 40, crop: 20 }, trainSeconds: 600, consume: 2, atk: 15, def: 4 },
     ];
     const TROOPS_BY_ID = Object.fromEntries(TROOPS.map((troop) => [troop.id, troop]));
 
+    const ENEMIES = [
+        { id: "wolf", name: "Wolf", icon: "🐺", atk: 5, def: 2, hp: 20, reward: { wood: 10, clay: 5, iron: 5, gold: 5 }, xp: 2 },
+        { id: "bandit", name: "Bandit", icon: "🗡️", atk: 12, def: 8, hp: 50, reward: { wood: 30, clay: 25, iron: 20, gold: 25 }, xp: 5 },
+        { id: "mercenary", name: "Soeldner", icon: "⚔️", atk: 25, def: 15, hp: 100, reward: { wood: 50, clay: 40, iron: 60, gold: 50 }, xp: 12 },
+        { id: "chieftain", name: "Raeuberhauptmann", icon: "👹", atk: 40, def: 25, hp: 200, reward: { wood: 100, clay: 80, iron: 120, gold: 80 }, xp: 25 },
+    ];
+    const ENEMIES_BY_ID = Object.fromEntries(ENEMIES.map((e) => [e.id, e]));
+
+    const DUNGEONS = [
+        { id: "mine", name: "Verlassene Mine", icon: "⛏️", levels: 5, enemies: ["wolf", "bandit", "bandit", "bandit", "chieftain"], rewardBonus: { iron: 1.5 } },
+        { id: "forest", name: "Verfluchter Wald", icon: "🌲", levels: 7, enemies: ["wolf", "wolf", "bandit", "bandit", "mercenary", "mercenary", "chieftain"], rewardBonus: { wood: 1.5 } },
+        { id: "ruins", name: "Ruinen der Alten", icon: "🏛️", levels: 10, enemies: ["bandit", "bandit", "mercenary", "mercenary", "mercenary", "chieftain", "chieftain", "chieftain", "chieftain", "chieftain"], rewardBonus: { gold: 2 } },
+    ];
+    const DUNGEONS_BY_ID = Object.fromEntries(DUNGEONS.map((d) => [d.id, d]));
+
+    const MAP_NEIGHBORS = {
+        24: [17, 23, 25, 31],
+        17: [10, 16, 18, 24],
+        23: [16, 22, 24, 30],
+        25: [18, 24, 26, 32],
+        31: [24, 30, 32, 38],
+    };
+
     const OBJECTIVES = [
-        {
-            id: "main-3",
-            title: "Verwaltung staerken",
-            desc: "Baue das Hauptgebaeude auf Stufe 3.",
-            reward: { wood: 280, clay: 280, iron: 280, crop: 220 },
-            isComplete: (state) => (state.buildings.main || 0) >= 3,
-        },
-        {
-            id: "crop-plus-60",
-            title: "Stabile Versorgung",
-            desc: "Erreiche mindestens +60 Netto-Getreide pro Stunde.",
-            reward: { wood: 180, clay: 180, iron: 120, crop: 360 },
-            isComplete: (state) => getNetCropPerHour(state) >= 60,
-        },
-        {
-            id: "army-20",
-            title: "Kleine Armee",
-            desc: "Rekrutiere insgesamt 20 Truppen.",
-            reward: { wood: 300, clay: 250, iron: 320, crop: 260 },
-            isComplete: (state) => getTotalTroops(state) >= 20,
-        },
+        { id: "main-3", title: "Verwaltung staerken", desc: "Baue das Hauptgebaeude auf Stufe 3.", reward: { wood: 280, clay: 280, iron: 280, crop: 220 }, isComplete: (s) => (s.buildings.main || 0) >= 3 },
+        { id: "crop-plus-60", title: "Stabile Versorgung", desc: "Erreiche mindestens +60 Netto-Getreide pro Stunde.", reward: { wood: 180, clay: 180, iron: 120, crop: 360 }, isComplete: (s) => getNetCropPerHour(s) >= 60 },
+        { id: "army-20", title: "Kleine Armee", desc: "Rekrutiere insgesamt 20 Truppen.", reward: { wood: 300, clay: 250, iron: 320, crop: 260 }, isComplete: (s) => getTotalTroops(s) >= 20 },
+        { id: "expand-1", title: "Erste Expansion", desc: "Erweitere dein Dorf auf ein Nachbarfeld.", reward: { wood: 200, clay: 200, iron: 150, crop: 150, gold: 30 }, isComplete: (s) => (s.expansion || []).length >= 1 },
+        { id: "dungeon-1", title: "Dungeon-Eroberer", desc: "Besiege den ersten Dungeon (Verlassene Mine).", reward: { wood: 150, clay: 150, iron: 200, gold: 50 }, isComplete: (s) => (s.dungeonsCleared || {}).mine >= 5 },
+        { id: "wall-5", title: "Befestigung", desc: "Baue die Stadtmauer auf Stufe 5.", reward: { wood: 250, clay: 300, iron: 350, crop: 200 }, isComplete: (s) => (s.buildings.wall || 0) >= 5 },
+        { id: "army-50", title: "Starke Armee", desc: "Rekrutiere insgesamt 50 Truppen.", reward: { wood: 400, clay: 350, iron: 450, crop: 400, gold: 80 }, isComplete: (s) => getTotalTroops(s) >= 50 },
+        { id: "waves-5", title: "Wellenmeister", desc: "Ueberstehe einen 5-Wellen-Angriff.", reward: { wood: 300, clay: 300, iron: 300, crop: 300, gold: 100 }, isComplete: (s) => (s.wavesSurvived || 0) >= 5 },
+        { id: "dungeon-ruins", title: "Ruinen-Eroberer", desc: "Besiege den Dungeon Ruinen der Alten komplett.", reward: { wood: 500, clay: 500, iron: 500, crop: 500, gold: 200 }, isComplete: (s) => (s.dungeonsCleared || {}).ruins >= 10 },
+        { id: "expand-4", title: "Reich expandieren", desc: "Erweitere dein Dorf auf 4 Nachbarfelder.", reward: { wood: 400, clay: 400, iron: 400, crop: 400, gold: 150 }, isComplete: (s) => (s.expansion || []).length >= 4 },
+        { id: "main-10", title: "Imperium", desc: "Baue das Hauptgebaeude auf Stufe 10.", reward: { wood: 800, clay: 800, iron: 800, crop: 800, gold: 300 }, isComplete: (s) => (s.buildings.main || 0) >= 10 },
+        { id: "army-100", title: "Endgame-Armee", desc: "Rekrutiere insgesamt 100 Truppen.", reward: { wood: 1000, clay: 1000, iron: 1000, crop: 1000, gold: 500 }, isComplete: (s) => getTotalTroops(s) >= 100 },
     ];
 
     const WORLD_EVENTS = [
-        {
-            id: "harvest-festival",
-            title: "Erntefest",
-            summary: "+450 Getreide",
-            apply: (state) => addResources({ crop: 450 }, state),
-        },
-        {
-            id: "craftsman-boom",
-            title: "Handwerksboom",
-            summary: "+240 Holz, +240 Lehm, +240 Eisen",
-            apply: (state) => addResources({ wood: 240, clay: 240, iron: 240 }, state),
-        },
-        {
-            id: "bandit-raid",
-            title: "Raubzug",
-            summary: "Bis zu 8% Holz, Lehm und Eisen verloren",
-            apply: (state) => {
-                const factor = 0.08;
-                ["wood", "clay", "iron"].forEach((resourceKey) => {
-                    const loss = Math.floor(state.resources[resourceKey] * factor);
-                    state.resources[resourceKey] = Math.max(0, state.resources[resourceKey] - loss);
-                });
-            },
-        },
+        { id: "harvest-festival", title: "Erntefest", summary: "+450 Getreide", apply: (s) => addResources({ crop: 450 }, s) },
+        { id: "craftsman-boom", title: "Handwerksboom", summary: "+240 Holz, Lehm, Eisen", apply: (s) => addResources({ wood: 240, clay: 240, iron: 240 }, s) },
+        { id: "bandit-raid", title: "Raubzug", summary: "Bis zu 8% Holz, Lehm, Eisen verloren", apply: (s) => {
+            const factor = 0.08;
+            ["wood", "clay", "iron"].forEach((k) => { s.resources[k] = Math.max(0, s.resources[k] - Math.floor(s.resources[k] * factor)); });
+        }},
+        { id: "treasure", title: "Schatz gefunden", summary: "+80 Gold", apply: (s) => addResources({ gold: 80 }, s) },
     ];
 
     const HELP_TEXTS = {
         resources:
-            "Rohstoffe: Holz, Lehm, Eisen, Getreide.\n\nProduktion entsteht durch Felder, Verbrauch durch Truppen.\n\nLagerhaus und Getreidespeicher begrenzen die maximale Kapazitaet.",
+            "Rohstoffe: Holz, Lehm, Eisen, Getreide, Gold.\n\nGold erhaeltst du durch Kämpfe, Dungeons und Ziele.",
         map:
-            "Die Weltkarte zeigt dein Startdorf in der Mitte (🏰).\n\nKlicke auf dein Dorf, um zum Dorfbereich zu wechseln.",
+            "Weltkarte: Dein Dorf (🏰), erweiterte Felder (🏘️). Leere Felder (🔲) können expandiert werden.",
         village:
             "Im Dorfzentrum baust du Gebaeude und Rohstofffelder aus.\n\nAchte auf Voraussetzungen und Kapazitaeten.",
         fields:
             "Rohstofffelder produzieren kontinuierlich.\n\nJede Stufe erhoeht Produktion und Ausbaukosten.",
         troops:
-            "Truppen benoetigen Kaserne und verbrauchen Getreide pro Stunde.\n\nNegative Getreidebilanz kann zu Desertion fuehren.",
+            "Truppen verbrauchen Getreide. Sie sammeln XP in Kämpfen (Angriffe, Dungeons) und werden stärker.",
         reports:
-            "Berichte protokollieren Bauabschluesse, Rekrutierungen, Ziele und Weltereignisse.",
+            "Berichte protokollieren Bauabschluesse, Kämpfe, Ziele und Weltereignisse.",
         objectives:
             "Ziele geben strukturierte Fortschritte vor.\n\nBeim Abschluss wird die Belohnung automatisch gutgeschrieben.",
+        dungeons:
+            "Dungeons: Sende Truppen, um Level zu erobern. Belohnung: Gold, Ressourcen, XP. Ein Dungeon pro Tag.",
     };
 
     let game = createInitialGameState();
@@ -255,17 +227,23 @@
     function createInitialGameState() {
         return {
             version: SAVE_VERSION,
-            resources: { wood: 750, clay: 750, iron: 750, crop: 750 },
+            resources: { wood: 750, clay: 750, iron: 750, crop: 750, gold: 0 },
             buildings: { main: 1, barracks: 0, warehouse: 0, granary: 0, wall: 0, rally: 0 },
             fields: FIELD_LAYOUT.map((type) => ({ type, level: 1 })),
             troops: { militia: 0, sword: 0, spear: 0, axe: 0 },
+            troopXp: { militia: 0, sword: 0, spear: 0, axe: 0 },
             queue: [],
             reports: [],
             day: 1,
             lastTick: Date.now(),
             lastEventDay: 0,
             starvationSeconds: 0,
-            objectives: Object.fromEntries(OBJECTIVES.map((objective) => [objective.id, false])),
+            objectives: Object.fromEntries(OBJECTIVES.map((o) => [o.id, false])),
+            expansion: [],
+            dungeonsCleared: {},
+            pendingAttack: null,
+            wavesSurvived: 0,
+            lastDungeonDay: 0,
         };
     }
 
@@ -276,6 +254,7 @@
             clay: Math.max(0, asNumber(raw.clay ?? raw.c, 0)),
             iron: Math.max(0, asNumber(raw.iron ?? raw.i, 0)),
             crop: Math.max(0, asNumber(raw.crop ?? raw.r, 0)),
+            gold: Math.max(0, asNumber(raw.gold ?? raw.g, 0)),
         };
     }
 
@@ -434,6 +413,12 @@
         }
 
         ensureStarterDefaults();
+        if (!Array.isArray(game.expansion)) game.expansion = [];
+        if (!game.dungeonsCleared || typeof game.dungeonsCleared !== "object") game.dungeonsCleared = {};
+        if (!game.troopXp || typeof game.troopXp !== "object") game.troopXp = { militia: 0, sword: 0, spear: 0, axe: 0 };
+        if (game.wavesSurvived == null) game.wavesSurvived = 0;
+        if (game.lastDungeonDay == null) game.lastDungeonDay = 0;
+        if (game.resources.gold == null) game.resources.gold = 0;
     }
 
     function saveGame() {
@@ -445,6 +430,7 @@
                 buildings: game.buildings,
                 fields: game.fields,
                 troops: game.troops,
+                troopXp: game.troopXp,
                 queue: game.queue,
                 day: game.day,
                 lastTick: game.lastTick,
@@ -452,6 +438,10 @@
                 starvationSeconds: game.starvationSeconds,
                 objectives: game.objectives,
                 reports: game.reports.slice(-MAX_REPORTS),
+                expansion: game.expansion,
+                dungeonsCleared: game.dungeonsCleared,
+                wavesSurvived: game.wavesSurvived,
+                lastDungeonDay: game.lastDungeonDay,
             })
         );
     }
@@ -540,11 +530,214 @@
     }
 
     function getTotalTroops(state = game) {
-        return Object.values(state.troops).reduce((sum, count) => sum + count, 0);
+        return Object.values(state.troops).reduce((sum, count) => sum + (typeof count === "number" ? count : 0), 0);
+    }
+
+    const XP_PER_LEVEL = [0, 10, 25, 50, 100, 175, 275, 400, 550, 750];
+    function getTroopLevel(xp) {
+        let level = 1;
+        for (let i = 1; i < XP_PER_LEVEL.length; i++) {
+            if (xp >= XP_PER_LEVEL[i]) level = i + 1;
+        }
+        return Math.min(10, level);
+    }
+
+    function getTroopPower(troopId, count, xp, state = game) {
+        const troop = TROOPS_BY_ID[troopId];
+        if (!troop) return { atk: 0, def: 0 };
+        const level = getTroopLevel(xp || 0);
+        const bonus = 1 + (level - 1) * 0.05;
+        const wallBonus = 1 + ((state.buildings.wall || 0) * 0.2);
+        return {
+            atk: Math.floor(troop.atk * count * bonus),
+            def: Math.floor(troop.def * count * bonus * (troopId === "militia" || troopId === "spear" ? wallBonus : 1)),
+        };
+    }
+
+    function getTotalArmyPower(state = game) {
+        let atk = 0, def = 0;
+        TROOPS.forEach((troop) => {
+            const count = state.troops[troop.id] || 0;
+            const xp = (state.troopXp || {})[troop.id] || 0;
+            const p = getTroopPower(troop.id, count, xp, state);
+            atk += p.atk;
+            def += p.def;
+        });
+        return { atk, def };
+    }
+
+    function runCombat(enemyId, state = game) {
+        const enemy = ENEMIES_BY_ID[enemyId];
+        if (!enemy) return { victory: false, playerLosses: {}, rewards: {}, xp: 0 };
+        const totalTroops = getTotalTroops(state);
+        if (totalTroops === 0) return { victory: false, playerLosses: {}, rewards: {}, xp: 0 };
+        const power = getTotalArmyPower(state);
+        const playerDamage = Math.max(1, power.atk - enemy.def);
+        const enemyDamage = Math.max(1, Math.floor(enemy.atk * 0.8) - Math.floor(power.def / Math.max(1, totalTroops)));
+        const roundsToKillEnemy = Math.ceil(enemy.hp / playerDamage);
+        const roundsWeSurvive = enemyDamage > 0 ? Math.floor((totalTroops * 8) / enemyDamage) : 999;
+        const victory = roundsToKillEnemy <= roundsWeSurvive;
+        if (!victory) {
+            const lossPct = 0.1;
+            const losses = {};
+            TROOPS.forEach((t) => {
+                const c = state.troops[t.id] || 0;
+                if (c > 0) losses[t.id] = Math.max(0, Math.floor(c * lossPct));
+            });
+            return { victory: false, playerLosses: losses, rewards: {}, xp: 0 };
+        }
+        const rewards = { ...enemy.reward };
+        Object.keys(rewards).forEach((k) => {
+            rewards[k] = Math.floor((rewards[k] || 0) * (0.8 + pseudoRandomUnit(state.day + enemyId.length) * 0.4));
+        });
+        const xpGain = enemy.xp;
+        return { victory: true, playerLosses: {}, rewards, xp: xpGain };
+    }
+
+    function applyCombatResult(result, state = game) {
+        Object.entries(result.playerLosses || {}).forEach(([tid, loss]) => {
+            state.troops[tid] = Math.max(0, (state.troops[tid] || 0) - loss);
+        });
+        if (result.rewards) addResources(result.rewards, state);
+        if (result.xp && result.victory) {
+            const totalTroops = getTotalTroops(state);
+            if (totalTroops > 0) {
+                TROOPS.forEach((t) => {
+                    const c = state.troops[t.id] || 0;
+                    if (c > 0) {
+                        state.troopXp = state.troopXp || {};
+                        const share = Math.floor((result.xp * c) / totalTroops);
+                        state.troopXp[t.id] = (state.troopXp[t.id] || 0) + share;
+                    }
+                });
+            }
+        }
+    }
+
+    function maybeTriggerAttack(day) {
+        if (day < 5) return;
+        if (game.pendingAttack) return;
+        const r = pseudoRandomUnit(day * 7 + 3);
+        if (r > 0.18) return;
+        const waveCount = Math.min(5, Math.floor(2 + day / 5));
+        const waves = [];
+        for (let w = 0; w < waveCount; w++) {
+            const idx = Math.min(ENEMIES.length - 1, Math.floor(pseudoRandomUnit(day + w * 11) * ENEMIES.length));
+            waves.push(ENEMIES[idx].id);
+        }
+        game.pendingAttack = { day, waves, currentWave: 0 };
+        addReport(`Angriff! ${waveCount} Welle(n) naehern sich dem Dorf.`);
+    }
+
+    function resolveAttackWave() {
+        if (!game.pendingAttack || game.pendingAttack.currentWave >= game.pendingAttack.waves.length) {
+            if (game.pendingAttack) {
+                game.wavesSurvived = Math.max(game.wavesSurvived || 0, game.pendingAttack.currentWave);
+                addReport(`Angriff beendet. ${game.pendingAttack.currentWave} Welle(n) ueberstanden.`);
+            }
+            game.pendingAttack = null;
+            renderAll();
+            return;
+        }
+        const enemyId = game.pendingAttack.waves[game.pendingAttack.currentWave];
+        const enemy = ENEMIES_BY_ID[enemyId];
+        const result = runCombat(enemyId);
+        applyCombatResult(result);
+        game.pendingAttack.currentWave += 1;
+        if (result.victory) {
+            addReport(`Welle ${game.pendingAttack.currentWave}: ${enemy.name} besiegt! Belohnung: ${formatResourceList(result.rewards)}.`);
+        } else {
+            addReport(`Welle ${game.pendingAttack.currentWave}: Niederlage gegen ${enemy.name}. Truppenverluste.`);
+        }
+        if (game.pendingAttack.currentWave >= game.pendingAttack.waves.length) {
+            game.wavesSurvived = Math.max(game.wavesSurvived || 0, game.pendingAttack.currentWave);
+            game.pendingAttack = null;
+        }
+        renderAll();
+        saveGame();
+    }
+
+    function canExpandTile(tileIndex) {
+        if (game.expansion.includes(tileIndex)) return false;
+        const neighbors = MAP_NEIGHBORS[24] || [];
+        if (game.expansion.length > 0) {
+            const allOwned = [24, ...game.expansion];
+            const tileNeighbors = MAP_NEIGHBORS[tileIndex];
+            if (!tileNeighbors) return false;
+            const hasNeighbor = tileNeighbors.some((n) => allOwned.includes(n));
+            if (!hasNeighbor) return false;
+        } else {
+            if (!neighbors.includes(tileIndex)) return false;
+        }
+        const mainLvl = game.buildings.main || 0;
+        const req = 5 + game.expansion.length * 2;
+        return mainLvl >= req;
+    }
+
+    function getExpansionCost(tileIndex) {
+        const base = { wood: 300, clay: 300, iron: 200, crop: 200 };
+        const mult = Math.pow(1.4, game.expansion.length);
+        return {
+            wood: Math.floor(base.wood * mult),
+            clay: Math.floor(base.clay * mult),
+            iron: Math.floor(base.iron * mult),
+            crop: Math.floor(base.crop * mult),
+        };
+    }
+
+    function startExpansion(tileIndex) {
+        if (!canExpandTile(tileIndex)) return false;
+        const cost = getExpansionCost(tileIndex);
+        if (!canAfford(cost)) return false;
+        spendResources(cost);
+        game.expansion.push(tileIndex);
+        addReport(`Expansion gestartet: Feld ${tileIndex} wird besiedelt.`);
+        return true;
+    }
+
+    function canStartDungeon(dungeonId) {
+        if (game.lastDungeonDay >= game.day) return false;
+        if (getTotalTroops(game) < 5) return false;
+        if (!dungeonId) return true;
+        const d = DUNGEONS_BY_ID[dungeonId];
+        if (!d) return false;
+        if (d.id === "ruins" && ((game.dungeonsCleared || {}).forest || 0) < 7) return false;
+        return true;
+    }
+
+    function runDungeon(dungeonId) {
+        const dungeon = DUNGEONS_BY_ID[dungeonId];
+        if (!dungeon || !canStartDungeon(dungeonId)) return;
+        game.lastDungeonDay = game.day;
+        game.dungeonsCleared[dungeonId] = game.dungeonsCleared[dungeonId] || 0;
+        let cleared = 0;
+        for (let i = 0; i < dungeon.levels; i++) {
+            const enemyId = dungeon.enemies[i] || dungeon.enemies[dungeon.enemies.length - 1];
+            const result = runCombat(enemyId);
+            applyCombatResult(result);
+            if (result.victory) {
+                cleared++;
+                let rewards = { ...result.rewards };
+                Object.keys(dungeon.rewardBonus || {}).forEach((k) => {
+                    rewards[k] = Math.floor((rewards[k] || 0) * (dungeon.rewardBonus[k] || 1));
+                });
+                addResources(rewards);
+            } else {
+                addReport(`Dungeon ${dungeon.name}: Level ${i + 1} verloren. ${cleared} Level erobert.`);
+                break;
+            }
+        }
+        game.dungeonsCleared[dungeonId] = Math.max(game.dungeonsCleared[dungeonId] || 0, cleared);
+        if (cleared >= dungeon.levels) {
+            addReport(`Dungeon ${dungeon.name} komplett erobert!`);
+        }
+        renderAll();
+        saveGame();
     }
 
     function canAfford(cost) {
-        return RESOURCE_KEYS.every((resourceKey) => game.resources[resourceKey] >= cost[resourceKey]);
+        const keys = ["wood", "clay", "iron", "crop", "gold"];
+        return keys.every((k) => (game.resources[k] || 0) >= asNumber(cost[k], 0));
     }
 
     function spendResources(cost) {
@@ -555,13 +748,17 @@
 
     function addResources(resourceBundle, state = game) {
         const caps = getStorageCapacity(state);
-        RESOURCE_KEYS.forEach((resourceKey) => {
+        ["wood", "clay", "iron", "crop"].forEach((resourceKey) => {
             const delta = asNumber(resourceBundle[resourceKey], 0);
             state.resources[resourceKey] = Math.max(
                 0,
-                Math.min(caps[resourceKey], state.resources[resourceKey] + delta)
+                Math.min(caps[resourceKey], (state.resources[resourceKey] || 0) + delta)
             );
         });
+        const goldDelta = asNumber(resourceBundle.gold, 0);
+        if (goldDelta > 0) {
+            state.resources.gold = (state.resources.gold || 0) + goldDelta;
+        }
     }
 
     function getQueueSlots() {
@@ -602,8 +799,10 @@
     }
 
     function formatResourceList(resourceBundle) {
-        return RESOURCE_KEYS.filter((resourceKey) => asNumber(resourceBundle[resourceKey], 0) > 0)
-            .map((resourceKey) => `${RESOURCE_ICONS[resourceKey]} ${Math.floor(resourceBundle[resourceKey])}`)
+        const keys = ["wood", "clay", "iron", "crop", "gold"];
+        return keys
+            .filter((k) => asNumber(resourceBundle[k], 0) > 0)
+            .map((k) => `${RESOURCE_ICONS[k] || "🪙"} ${Math.floor(resourceBundle[k])}`)
             .join(", ");
     }
 
@@ -634,6 +833,7 @@
         if (nextDay > game.day) {
             for (let day = game.day + 1; day <= nextDay; day += 1) {
                 maybeTriggerWorldEvent(day);
+                maybeTriggerAttack(day);
             }
         }
 
@@ -840,6 +1040,7 @@
         const capacity = getStorageCapacity();
         const netCrop = production.crop - cropConsumption;
 
+        if (dom.resGold) dom.resGold.textContent = Math.floor(game.resources.gold || 0).toLocaleString("de-DE");
         dom.resWood.textContent = Math.floor(game.resources.wood).toLocaleString("de-DE");
         dom.resClay.textContent = Math.floor(game.resources.clay).toLocaleString("de-DE");
         dom.resIron.textContent = Math.floor(game.resources.iron).toLocaleString("de-DE");
@@ -894,23 +1095,60 @@
 
     function renderMap() {
         dom.mapGrid.innerHTML = "";
+        const expanded = game.expansion || [];
+        const allOwned = [24, ...expanded];
         for (let index = 0; index < 49; index += 1) {
             const tile = document.createElement("button");
             tile.type = "button";
             tile.dataset.index = String(index);
-            tile.className = `map-tile ${index === 24 ? "village" : "empty"}`;
-            tile.setAttribute("aria-label", index === 24 ? "Eigenes Dorf" : "Leeres Kartenfeld");
+            let label = "Leeres Kartenfeld";
+            if (index === 24) {
+                tile.className = "map-tile village";
+                label = "Eigenes Dorf";
+            } else if (expanded.includes(index)) {
+                tile.className = "map-tile expanded";
+                label = "Erweitertes Dorf";
+            } else if (canExpandTile(index)) {
+                tile.className = "map-tile expandable empty";
+                label = "Expandieren";
+            } else {
+                tile.className = "map-tile empty";
+            }
+            tile.setAttribute("aria-label", label);
             dom.mapGrid.appendChild(tile);
         }
+        if (dom.attackAlert) {
+            dom.attackAlert.hidden = !game.pendingAttack;
+            if (game.pendingAttack) {
+                const w = game.pendingAttack.waves.length;
+                const c = game.pendingAttack.currentWave;
+                dom.attackAlertText.textContent = `Welle ${c + 1}/${w}: ${ENEMIES_BY_ID[game.pendingAttack.waves[c]]?.name || "Gegner"}. Klicke um Kampf auszufuehren.`;
+            }
+        }
+    }
+
+    const BUILDING_ICONS_BY_LEVEL = {
+        main: ["🏠", "🏠", "🏛️", "🏛️", "🏛️", "🏰", "🏰", "🏰", "🏰", "🏰"],
+        barracks: ["⚔️", "⚔️", "⚔️", "⚔️", "⚔️"],
+        warehouse: ["📦", "📦", "📦", "📦", "📦"],
+        granary: ["🌾", "🌾", "🌾", "🌾", "🌾"],
+        wall: ["🧱", "🧱", "🧱", "🧱", "🧱"],
+        rally: ["🏕️", "🏕️", "🏕️", "🏕️", "🏕️"],
+    };
+    function getBuildingIcon(buildingId, level) {
+        const arr = BUILDING_ICONS_BY_LEVEL[buildingId];
+        if (!arr) return BUILDINGS[buildingId]?.icon || "🏠";
+        return arr[Math.min(level - 1, arr.length - 1)] || arr[0];
     }
 
     function renderVillage() {
         dom.villageLayout.innerHTML = BUILDING_ORDER.map((buildingId) => {
             const building = BUILDINGS[buildingId];
             const level = game.buildings[buildingId] || 0;
+            const icon = level > 0 ? getBuildingIcon(buildingId, level) : building.icon;
             return `
                 <button type="button" class="building-slot ${level ? "" : "empty"}" data-building-id="${buildingId}">
-                    <span class="icon">${building.icon}</span>
+                    <span class="icon">${icon}</span>
                     <span class="name">${building.name}</span>
                     <span class="level">${level ? `Stufe ${level}` : "Leer"}</span>
                 </button>
@@ -937,6 +1175,8 @@
 
         dom.troopsGrid.innerHTML = TROOPS.map((troop) => {
             const owned = game.troops[troop.id] || 0;
+            const xp = (game.troopXp || {})[troop.id] || 0;
+            const level = getTroopLevel(xp);
             const canPayOne = canAfford(troop.cost);
             const buttonDisabled = !canTrain || queueFull || !canPayOne;
 
@@ -945,6 +1185,7 @@
                     <div class="icon">${troop.icon}</div>
                     <div class="name">${troop.name}</div>
                     <div class="count">${owned} Einheiten</div>
+                    ${owned > 0 ? `<div class="troop-xp">St. ${level} (${xp} XP) | ATK ${troop.atk} DEF ${troop.def}</div>` : ""}
                     <div class="meta">${troop.consume} Getreide/h Verbrauch</div>
                     <div class="meta">${formatResourceList(troop.cost)}</div>
                     ${
@@ -1000,11 +1241,42 @@
             : "Alle Ziele abgeschlossen.";
     }
 
+    function renderDungeons() {
+        if (!dom.dungeonList) return;
+        const canDo = canStartDungeon();
+        dom.dungeonList.innerHTML = DUNGEONS.map((d) => {
+            const cleared = (game.dungeonsCleared || {})[d.id] || 0;
+            const locked = d.id === "ruins" && ((game.dungeonsCleared || {}).forest || 0) < 7;
+            const ready = !locked && canStartDungeon(d.id);
+            return `
+                <article class="dungeon-card ${locked ? "locked" : ""}">
+                    <div class="dungeon-header">
+                        <span class="dungeon-icon">${d.icon}</span>
+                        <div>
+                            <h4>${d.name}</h4>
+                            <small>${cleared}/${d.levels} Level erobert</small>
+                        </div>
+                    </div>
+                    <div class="dungeon-levels">
+                        ${Array.from({ length: d.levels }, (_, i) =>
+                            `<span class="dungeon-level-dot ${i < cleared ? "cleared" : ""}" title="Level ${i + 1}"></span>`
+                        ).join("")}
+                    </div>
+                    <p class="meta">Gegner: ${d.enemies.map((eid) => ENEMIES_BY_ID[eid]?.name || eid).join(", ")}</p>
+                    ${ready ? `<button type="button" class="btn btn-sm" data-dungeon-id="${d.id}">Betreten</button>` : ""}
+                    ${locked ? `<p class="empty-state">Schließe zuerst Verfluchter Wald ab.</p>` : ""}
+                </article>
+            `;
+        }).join("");
+    }
+
     function renderCurrentTab() {
         if (activeTab === "village") {
             renderVillage();
         } else if (activeTab === "troops") {
             renderTroops();
+        } else if (activeTab === "dungeons") {
+            renderDungeons();
         } else if (activeTab === "reports") {
             renderReports();
         }
@@ -1014,6 +1286,7 @@
         renderResourceBar();
         renderQueue();
         renderObjectives();
+        if (activeTab === "map") renderMap();
         renderCurrentTab();
     }
 
@@ -1224,12 +1497,20 @@
 
     function handleMapClick(event) {
         const tile = event.target.closest(".map-tile");
-        if (!tile) {
-            return;
-        }
+        if (!tile) return;
         const index = Math.floor(asNumber(tile.dataset.index, -1));
         if (index === 24) {
             switchTab("village");
+        } else if (tile.classList.contains("expandable")) {
+            if (startExpansion(index)) {
+                renderMap();
+                renderAll();
+                saveGame();
+            } else {
+                const cost = getExpansionCost(index);
+                addReport(`Expansion fehlgeschlagen: Benoetigt ${formatResourceList(cost)} und Hauptgebaeude St. ${5 + (game.expansion || []).length * 2}.`);
+                renderAll();
+            }
         }
     }
 
@@ -1251,10 +1532,14 @@
 
     function handleTroopClick(event) {
         const button = event.target.closest("[data-train-id]");
-        if (!button) {
-            return;
-        }
+        if (!button) return;
         trainTroop(button.dataset.trainId);
+    }
+
+    function handleDungeonClick(event) {
+        const btn = event.target.closest("[data-dungeon-id]");
+        if (!btn) return;
+        runDungeon(btn.dataset.dungeonId);
     }
 
     function cacheDomElements() {
@@ -1300,6 +1585,11 @@
         dom.resourceFields = document.getElementById("resourceFields");
         dom.troopsGrid = document.getElementById("troopsGrid");
         dom.reportList = document.getElementById("reportList");
+        dom.resGold = document.getElementById("resGold");
+        dom.attackAlert = document.getElementById("attackAlert");
+        dom.attackAlertText = document.getElementById("attackAlertText");
+        dom.attackResolveBtn = document.getElementById("attackResolveBtn");
+        dom.dungeonList = document.getElementById("dungeonList");
     }
 
     function registerEventListeners() {
@@ -1327,6 +1617,8 @@
         dom.villageLayout.addEventListener("click", handleVillageClick);
         dom.resourceFields.addEventListener("click", handleFieldClick);
         dom.troopsGrid.addEventListener("click", handleTroopClick);
+        if (dom.attackResolveBtn) dom.attackResolveBtn.addEventListener("click", resolveAttackWave);
+        if (dom.dungeonList) dom.dungeonList.addEventListener("click", handleDungeonClick);
 
         dom.helpModal.addEventListener("click", (event) => {
             if (event.target === dom.helpModal) {

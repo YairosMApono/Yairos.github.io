@@ -19,6 +19,10 @@
 
         <section class="resource-bar" aria-label="Rohstoffübersicht">
             <button class="help-btn" data-help="resources" aria-label="Hilfe zu Rohstoffen" type="button">?</button>
+            <div class="resource resource-gold">
+                <span class="resource-icon">🪙</span>
+                <div><span class="resource-value" id="resGold">0</span></div>
+            </div>
             <div class="resource">
                 <span class="resource-icon">🪵</span>
                 <div><span class="resource-value" id="resWood">0</span><div class="resource-rate" id="rateWood">+0/h</div><div class="resource-storage" id="storeWood"></div></div>
@@ -45,6 +49,7 @@
             <button class="tab active" data-tab="map" type="button">🗺️ Karte</button>
             <button class="tab" data-tab="village" type="button">🏰 Dorf</button>
             <button class="tab" data-tab="troops" type="button">⚔️ Truppen</button>
+            <button class="tab" data-tab="dungeons" type="button">🕳️ Dungeons</button>
             <button class="tab" data-tab="reports" type="button">📜 Berichte</button>
         </nav>
 
@@ -76,7 +81,12 @@
                 <div class="map-grid" id="mapGrid"></div>
                 <div class="info-panel">
                     <h3>ℹ️ Hinweis</h3>
-                    <p>Klicke auf dein Dorf (🏰), um Gebäude auszubauen, Rohstofffelder zu verbessern und Truppen zu rekrutieren.</p>
+                    <p>Klicke auf dein Dorf (🏰) zum Bauen. Erweiterte Felder (🏘️) zeigen dein Reich. Leere Felder (🔲) können expandiert werden.</p>
+                </div>
+                <div id="attackAlert" class="attack-alert" hidden>
+                    <h3>⚠️ Angriff!</h3>
+                    <p id="attackAlertText"></p>
+                    <button class="btn btn-sm" id="attackResolveBtn" type="button">Kampf ausführen</button>
                 </div>
             </div>
         </section>
@@ -111,8 +121,19 @@
                     <h3 class="section-title">Kaserne</h3>
                     <button class="help-btn" data-help="troops" aria-label="Hilfe zur Kaserne" type="button">?</button>
                 </div>
-                <p class="section-subtitle">Rekrutiere Truppen - sie verbrauchen Getreide pro Stunde.</p>
+                <p class="section-subtitle">Rekrutiere Truppen - sie verbrauchen Getreide pro Stunde. Truppen sammeln XP in Kämpfen.</p>
                 <div class="troops-grid" id="troopsGrid"></div>
+            </div>
+        </section>
+
+        <section id="dungeonsTab" class="village-view">
+            <div class="map-container">
+                <div class="section-header">
+                    <h3 class="section-title">Dungeons</h3>
+                    <button class="help-btn" data-help="dungeons" aria-label="Hilfe zu Dungeons" type="button">?</button>
+                </div>
+                <p class="section-subtitle">Erobere Dungeons mit deinen Truppen. Belohnungen: Gold, Ressourcen, XP.</p>
+                <div id="dungeonList" class="dungeon-list"></div>
             </div>
         </section>
 
